@@ -15,6 +15,9 @@ class RecipeParserViewModel: ObservableObject {
         self.client = xAIClient(apiKey: ProcessInfo.processInfo.environment["XAI_API_KEY"] ?? "")
     }
     
+    // Configuration option for API type
+    var useJsonSchema = false // Set to true for OpenAI, false for xAI
+    
     func parseRecipe() async {
         guard !inputText.isEmpty else { return }
         
@@ -23,45 +26,54 @@ class RecipeParserViewModel: ObservableObject {
         parsedRecipe = nil
         
         do {
-            // For xAI: Use json_object response format
-            // This guarantees JSON output but doesn't enforce schema validation
-            let responseFormat = ResponseFormat(type: .jsonObject, jsonSchema: nil)
+            let responseFormat: ResponseFormat
+            let model: String
             
-            // For OpenAI-compatible APIs: You can use json_schema with full validation
-            // let schema: [String: Any] = [
-            //     "type": "object",
-            //     "properties": [
-            //         "name": ["type": "string"],
-            //         "servings": ["type": "integer", "minimum": 1],
-            //         "prepTime": ["type": "integer", "minimum": 0],
-            //         "cookTime": ["type": "integer", "minimum": 0],
-            //         "difficulty": ["type": "string", "enum": ["easy", "medium", "hard"]],
-            //         "ingredients": [
-            //             "type": "array",
-            //             "items": [
-            //                 "type": "object",
-            //                 "properties": [
-            //                     "name": ["type": "string"],
-            //                     "amount": ["type": "string"],
-            //                     "unit": ["type": "string"]
-            //                 ],
-            //                 "required": ["name", "amount"]
-            //             ]
-            //         ],
-            //         "instructions": [
-            //             "type": "array",
-            //             "items": ["type": "string"]
-            //         ]
-            //     ],
-            //     "required": ["name", "servings", "prepTime", "cookTime", "difficulty", "ingredients", "instructions"]
-            // ]
-            // let jsonSchema = JSONSchema(name: "recipe", strict: true, schema: schema)
-            // let responseFormat = ResponseFormat(type: .jsonSchema, jsonSchema: jsonSchema)
+            if useJsonSchema {
+                // Method 1: JSON Schema (OpenAI-compatible) - More robust with validation
+                let schema: [String: Any] = [
+                    "type": "object",
+                    "properties": [
+                        "name": ["type": "string"],
+                        "servings": ["type": "integer", "minimum": 1],
+                        "prepTime": ["type": "integer", "minimum": 0],
+                        "cookTime": ["type": "integer", "minimum": 0],
+                        "difficulty": ["type": "string", "enum": ["easy", "medium", "hard"]],
+                        "ingredients": [
+                            "type": "array",
+                            "items": [
+                                "type": "object",
+                                "properties": [
+                                    "name": ["type": "string"],
+                                    "amount": ["type": "string"],
+                                    "unit": ["type": "string"]
+                                ],
+                                "required": ["name", "amount"]
+                            ]
+                        ],
+                        "instructions": [
+                            "type": "array",
+                            "items": ["type": "string"]
+                        ]
+                    ],
+                    "required": ["name", "servings", "prepTime", "cookTime", "difficulty", "ingredients", "instructions"]
+                ]
+                
+                let jsonSchema = JSONSchema(name: "recipe", strict: true, schema: schema)
+                responseFormat = ResponseFormat(type: .jsonSchema, jsonSchema: jsonSchema)
+                model = "gpt-4o-mini" // or any OpenAI model
+            } else {
+                // Method 2: JSON Object (xAI-compatible) - Guarantees JSON but no schema validation
+                responseFormat = ResponseFormat(type: .jsonObject, jsonSchema: nil)
+                model = "grok-3-mini-fast"
+            }
             
             let messages = [
                 ChatMessage(
                     role: .system,
-                    content: """
+                    content: useJsonSchema ? 
+                    "You are a helpful recipe parser. Extract recipe information from the provided text." :
+                    """
                     You are a helpful recipe parser. Extract recipe information from the provided text and return it as a JSON object with this EXACT structure:
                     {
                         "name": "Recipe Name",
@@ -85,7 +97,7 @@ class RecipeParserViewModel: ObservableObject {
             
             let request = ChatCompletionRequest(
                 messages: messages,
-                model: "grok-3-mini-fast",
+                model: model,
                 responseFormat: responseFormat
             )
             

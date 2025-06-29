@@ -2,9 +2,11 @@
     @XcodeRequirement(title: "Xcode 16.0 or later", destination: "https://developer.apple.com/xcode/")
     
     @Intro(title: "Working with Structured Outputs") {
-        Learn how to use structured outputs to get consistent, type-safe JSON responses from AI models. Build a SwiftUI app that extracts structured data from unstructured text.
+        Learn how to use structured outputs to get consistent, type-safe JSON responses from AI models. This tutorial covers both approaches: the robust `json_schema` method (OpenAI) and the `json_object` method (xAI).
         
-        Note: xAI currently supports `json_object` response format, which guarantees JSON output. Full schema validation with `json_schema` is available for OpenAI-compatible APIs. xAI's beta parse API with Pydantic-style schemas is not yet implemented in this SDK.
+        **Recommendation**: Use `json_schema` when available (OpenAI) as it provides strict validation, type safety, and eliminates parsing errors. Fall back to `json_object` with detailed prompting for xAI compatibility.
+        
+        Note: xAI's beta parse API with Pydantic-style schemas is not yet implemented in this Swift SDK.
         
         @Image(source: "smart-assistant", alt: "An AI assistant providing structured responses")
     }
@@ -95,6 +97,28 @@
                 Create a comprehensive view to display all the structured data.
                 
                 @Code(name: "AdvancedRecipeView.swift", file: "structured-09-advanced-view.swift")
+            }
+        }
+    }
+    
+    @Section(title: "JSON Schema - The Robust Approach") {
+        @ContentAndMedia {
+            JSON Schema provides the most robust way to ensure structured outputs. While currently supported by OpenAI's API, it offers strict validation and type safety that eliminates the need for extensive error handling.
+            
+            @Image(source: "smart-assistant", alt: "JSON Schema validation")
+        }
+        
+        @Steps {
+            @Step {
+                Create a view model that uses JSON Schema for strict validation. Notice how the schema defines types, constraints, and required fields.
+                
+                @Code(name: "SchemaBasedViewModel.swift", file: "structured-11-jsonschema-viewmodel.swift")
+            }
+            
+            @Step {
+                Build a UI that lets users switch between json_object and json_schema modes to see the difference in robustness.
+                
+                @Code(name: "ModeSwitcherView.swift", file: "structured-12-mode-switcher.swift")
             }
         }
     }
