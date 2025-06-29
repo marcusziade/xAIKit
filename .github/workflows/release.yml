@@ -71,7 +71,7 @@ jobs:
       run: |
         docker build -t xaikit:release .
         docker create --name extract xaikit:release
-        docker cp extract:/app/xai-cli ./xai-cli-linux
+        docker cp extract:/usr/local/bin/xai-cli ./xai-cli-linux
         docker rm extract
         chmod +x xai-cli-linux
         tar -czf xai-cli-linux.tar.gz xai-cli-linux
