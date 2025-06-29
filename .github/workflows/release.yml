@@ -14,22 +14,19 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     
     steps:
     - uses: actions/checkout@v4
     
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.ref }}
-        release_name: ${{ github.ref_name }}
+        name: ${{ github.ref_name }}
         draft: false
         prerelease: false
+        generate_release_notes: true
 
   build-macos:
     name: Build macOS Binary
@@ -50,14 +47,10 @@ jobs:
         tar -czf xai-cli-macos.tar.gz xai-cli-macos
     
     - name: Upload macOS Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./xai-cli-macos.tar.gz
-        asset_name: xai-cli-macos.tar.gz
-        asset_content_type: application/gzip
+        tag_name: ${{ github.ref }}
+        files: ./xai-cli-macos.tar.gz
 
   build-linux:
     name: Build Linux Binary
@@ -77,11 +70,7 @@ jobs:
         tar -czf xai-cli-linux.tar.gz xai-cli-linux
     
     - name: Upload Linux Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./xai-cli-linux.tar.gz
-        asset_name: xai-cli-linux.tar.gz
-        asset_content_type: application/gzip
+        tag_name: ${{ github.ref }}
+        files: ./xai-cli-linux.tar.gz
