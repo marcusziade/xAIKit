@@ -1,0 +1,12 @@
+.build/
+.swiftpm/
+.git/
+.gitignore
+*.xcodeproj
+DerivedData/
+.DS_Store
+*.resolved
+.vscode/
+README.md
+LICENSE
+.github/
