@@ -27,10 +27,6 @@ let package = Package(
     dependencies: [
         // ArgumentParser for CLI
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0"),
-        // AsyncHTTPClient for Linux support and streaming
-        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.19.0"),
-        // SwiftNIO for advanced networking (required by AsyncHTTPClient)
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.62.0"),
         // swift-docc-plugin for documentation
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
     ],
@@ -38,11 +34,7 @@ let package = Package(
         // Main library target
         .target(
             name: "xAIKit",
-            dependencies: [
-                .product(name: "AsyncHTTPClient", package: "async-http-client"),
-                .product(name: "NIO", package: "swift-nio"),
-                .product(name: "NIOFoundationCompat", package: "swift-nio"),
-            ],
+            dependencies: [],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
             ]

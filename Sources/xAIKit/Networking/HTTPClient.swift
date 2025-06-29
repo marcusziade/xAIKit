@@ -2,10 +2,6 @@ import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-import AsyncHTTPClient
-import NIO
-import NIOFoundationCompat
-import NIOHTTP1
 
 /// Protocol for HTTP client implementations
 public protocol HTTPClientProtocol {
@@ -51,50 +47,40 @@ public enum StreamEvent {
     case done
 }
 
-/// Main HTTP client implementation
-public final class xAIHTTPClient: HTTPClientProtocol {
+/// Simple network error wrapper
+struct NetworkError: LocalizedError {
+    let message: String
+    
+    var errorDescription: String? {
+        return message
+    }
+}
+
+/// Factory function to create platform-appropriate HTTP client
+public func createHTTPClient(configuration: xAIConfiguration) -> HTTPClientProtocol {
+    #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+    return URLSessionHTTPClient(configuration: configuration)
+    #else
+    return CURLHTTPClient(configuration: configuration)
+    #endif
+}
+
+/// URLSession-based HTTP client for Apple platforms
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+public final class URLSessionHTTPClient: HTTPClientProtocol {
     private let configuration: xAIConfiguration
-    private let asyncHTTPClient: AsyncHTTPClient.HTTPClient
+    private let session: URLSession
     
     public init(configuration: xAIConfiguration) {
         self.configuration = configuration
         
-        // Configure AsyncHTTPClient
-        var clientConfig = AsyncHTTPClient.HTTPClient.Configuration()
-        clientConfig.timeout = .init(
-            connect: .seconds(10),
-            read: .seconds(Int64(configuration.timeoutInterval))
-        )
-        
-        self.asyncHTTPClient = AsyncHTTPClient.HTTPClient(
-            eventLoopGroupProvider: .singleton,
-            configuration: clientConfig
-        )
-    }
-    
-    deinit {
-        try? asyncHTTPClient.syncShutdown()
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = configuration.timeoutInterval
+        config.timeoutIntervalForResource = configuration.timeoutInterval * 2
+        self.session = URLSession(configuration: config)
     }
     
     public func sendRequest<T: Decodable>(_ request: HTTPRequest) async throws -> T {
-        #if os(macOS) && !targetEnvironment(macCatalyst)
-        // Use URLSession on macOS for non-streaming requests
-        if !configuration.useStreaming {
-            return try await sendRequestWithURLSession(request)
-        }
-        #endif
-        
-        // Use AsyncHTTPClient for Linux and streaming
-        return try await sendRequestWithAsyncHTTPClient(request)
-    }
-    
-    public func sendStreamingRequest(_ request: HTTPRequest) async throws -> AsyncThrowingStream<StreamEvent, Error> {
-        // Always use AsyncHTTPClient for streaming
-        return try await sendStreamingRequestWithAsyncHTTPClient(request)
-    }
-    
-    #if os(macOS) && !targetEnvironment(macCatalyst)
-    private func sendRequestWithURLSession<T: Decodable>(_ request: HTTPRequest) async throws -> T {
         var urlRequest = URLRequest(url: request.url)
         urlRequest.httpMethod = request.method.rawValue
         urlRequest.httpBody = request.body
@@ -113,7 +99,7 @@ public final class xAIHTTPClient: HTTPClientProtocol {
             urlRequest.setValue(value, forHTTPHeaderField: key)
         }
         
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await session.data(for: urlRequest)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw xAIError.invalidResponse
@@ -145,101 +131,100 @@ public final class xAIHTTPClient: HTTPClientProtocol {
             throw xAIError.decodingError(error)
         }
     }
-    #endif
     
-    private func sendRequestWithAsyncHTTPClient<T: Decodable>(_ request: HTTPRequest) async throws -> T {
-        var headers = NIOHTTP1.HTTPHeaders()
-        headers.add(name: "Authorization", value: "Bearer \(configuration.apiKey)")
-        headers.add(name: "Content-Type", value: "application/json")
-        headers.add(name: "User-Agent", value: "xAIKit/\(xAIKit.version)")
+    public func sendStreamingRequest(_ request: HTTPRequest) async throws -> AsyncThrowingStream<StreamEvent, Error> {
+        var urlRequest = URLRequest(url: request.url)
+        urlRequest.httpMethod = request.method.rawValue
+        urlRequest.httpBody = request.body
+        urlRequest.timeoutInterval = request.timeoutInterval
+        
+        // Set headers
+        urlRequest.setValue("Bearer \(configuration.apiKey)", forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("xAIKit/\(xAIKit.version)", forHTTPHeaderField: "User-Agent")
+        urlRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         
         for (key, value) in request.headers {
-            headers.add(name: key, value: value)
+            urlRequest.setValue(value, forHTTPHeaderField: key)
         }
         
         for (key, value) in configuration.customHeaders {
-            headers.add(name: key, value: value)
+            urlRequest.setValue(value, forHTTPHeaderField: key)
         }
-        
-        let httpRequest = try AsyncHTTPClient.HTTPClient.Request(
-            url: request.url.absoluteString,
-            method: NIOHTTP1.HTTPMethod(rawValue: request.method.rawValue),
-            headers: headers,
-            body: request.body.map { .data($0) }
-        )
-        
-        let response = try await asyncHTTPClient.execute(request: httpRequest).get()
-        
-        if response.status.code == 429 {
-            let retryAfter = response.headers["Retry-After"].first.flatMap(Int.init)
-            throw xAIError.rateLimitExceeded(retryAfter: retryAfter)
-        }
-        
-        guard (200...299).contains(response.status.code) else {
-            if let body = response.body {
-                let data = Data(buffer: body)
-                if let errorResponse = try? JSONDecoder().decode(APIErrorResponse.self, from: data) {
-                    throw xAIError.apiError(
-                        statusCode: Int(response.status.code),
-                        message: errorResponse.error.message
-                    )
-                }
-                // Try to get raw error message
-                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-                throw xAIError.apiError(
-                    statusCode: Int(response.status.code),
-                    message: errorMessage
-                )
-            }
-            throw xAIError.apiError(
-                statusCode: Int(response.status.code),
-                message: "Unknown error"
-            )
-        }
-        
-        guard let body = response.body else {
-            throw xAIError.invalidResponse
-        }
-        
-        let data = Data(buffer: body)
-        
-        do {
-            return try JSONDecoder().decode(T.self, from: data)
-        } catch {
-            throw xAIError.decodingError(error)
-        }
-    }
-    
-    private func sendStreamingRequestWithAsyncHTTPClient(_ request: HTTPRequest) async throws -> AsyncThrowingStream<StreamEvent, Error> {
-        var headers = NIOHTTP1.HTTPHeaders()
-        headers.add(name: "Authorization", value: "Bearer \(configuration.apiKey)")
-        headers.add(name: "Content-Type", value: "application/json")
-        headers.add(name: "User-Agent", value: "xAIKit/\(xAIKit.version)")
-        headers.add(name: "Accept", value: "text/event-stream")
-        
-        for (key, value) in request.headers {
-            headers.add(name: key, value: value)
-        }
-        
-        for (key, value) in configuration.customHeaders {
-            headers.add(name: key, value: value)
-        }
-        
-        let httpRequest = try AsyncHTTPClient.HTTPClient.Request(
-            url: request.url.absoluteString,
-            method: NIOHTTP1.HTTPMethod(rawValue: request.method.rawValue),
-            headers: headers,
-            body: request.body.map { .data($0) }
-        )
         
         return AsyncThrowingStream { continuation in
             Task {
                 do {
-                    let delegate = StreamingResponseDelegate(continuation: continuation)
-                    _ = try await asyncHTTPClient.execute(
-                        request: httpRequest,
-                        delegate: delegate
-                    ).get()
+                    let (bytes, response) = try await session.bytes(for: urlRequest)
+                    
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: xAIError.invalidResponse)
+                        return
+                    }
+                    
+                    if httpResponse.statusCode == 429 {
+                        let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init)
+                        continuation.finish(throwing: xAIError.rateLimitExceeded(retryAfter: retryAfter))
+                        return
+                    }
+                    
+                    guard (200...299).contains(httpResponse.statusCode) else {
+                        // Try to collect error data
+                        var errorData = Data()
+                        for try await byte in bytes {
+                            errorData.append(byte)
+                        }
+                        
+                        if let errorResponse = try? JSONDecoder().decode(APIErrorResponse.self, from: errorData) {
+                            continuation.finish(throwing: xAIError.apiError(
+                                statusCode: httpResponse.statusCode,
+                                message: errorResponse.error.message
+                            ))
+                        } else {
+                            let errorMessage = String(data: errorData, encoding: .utf8) ?? "Unknown error"
+                            continuation.finish(throwing: xAIError.apiError(
+                                statusCode: httpResponse.statusCode,
+                                message: errorMessage
+                            ))
+                        }
+                        return
+                    }
+                    
+                    // Buffer for accumulating data until we have complete lines
+                    var buffer = Data()
+                    
+                    for try await byte in bytes {
+                        buffer.append(byte)
+                        
+                        // Check for complete lines
+                        while let newlineRange = buffer.range(of: Data([0x0A])) { // \n
+                            let line = buffer[..<newlineRange.lowerBound]
+                            buffer.removeSubrange(..<newlineRange.upperBound)
+                            
+                            // Check if this is a complete SSE event (double newline)
+                            if line.isEmpty && !buffer.isEmpty {
+                                // Look for another newline to complete the double newline
+                                if buffer.first == 0x0A {
+                                    buffer.removeFirst()
+                                    // We have a complete event, process what we've accumulated
+                                    continuation.yield(.data(Data())) // Empty line to signal event boundary
+                                }
+                            } else {
+                                // Yield the line data including the newline
+                                var lineWithNewline = line
+                                lineWithNewline.append(0x0A)
+                                continuation.yield(.data(lineWithNewline))
+                            }
+                        }
+                    }
+                    
+                    // Send any remaining data
+                    if !buffer.isEmpty {
+                        continuation.yield(.data(buffer))
+                    }
+                    
+                    continuation.yield(.done)
+                    continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
                 }
@@ -247,89 +232,275 @@ public final class xAIHTTPClient: HTTPClientProtocol {
         }
     }
 }
+#endif
 
-/// Actor for managing buffer state safely
-private actor StreamingBuffer {
-    private var buffer = Data()
+/// CURL-based HTTP client for Linux
+#if os(Linux)
+public final class CURLHTTPClient: HTTPClientProtocol {
+    private let configuration: xAIConfiguration
     
-    func append(_ data: Data) {
-        buffer.append(data)
+    public init(configuration: xAIConfiguration) {
+        self.configuration = configuration
     }
     
-    func extractEvents() -> [Data] {
-        var events: [Data] = []
+    public func sendRequest<T: Decodable>(_ request: HTTPRequest) async throws -> T {
+        // Use URLSession with synchronous wrapper for non-streaming requests on Linux
+        var urlRequest = URLRequest(url: request.url)
+        urlRequest.httpMethod = request.method.rawValue
+        urlRequest.httpBody = request.body
+        urlRequest.timeoutInterval = request.timeoutInterval
         
-        // Process complete SSE events
-        while let range = buffer.range(of: "\n\n".data(using: .utf8)!) {
-            let eventData = buffer[..<range.lowerBound]
-            buffer.removeSubrange(..<range.upperBound)
-            
-            if !eventData.isEmpty {
-                events.append(eventData)
-            }
+        // Set headers
+        urlRequest.setValue("Bearer \(configuration.apiKey)", forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("xAIKit/\(xAIKit.version)", forHTTPHeaderField: "User-Agent")
+        
+        for (key, value) in request.headers {
+            urlRequest.setValue(value, forHTTPHeaderField: key)
         }
         
-        return events
+        for (key, value) in configuration.customHeaders {
+            urlRequest.setValue(value, forHTTPHeaderField: key)
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            let task = URLSession.shared.dataTask(with: urlRequest) { data, response, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                
+                guard let data = data, let httpResponse = response as? HTTPURLResponse else {
+                    continuation.resume(throwing: xAIError.invalidResponse)
+                    return
+                }
+                
+                if httpResponse.statusCode == 429 {
+                    let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init)
+                    continuation.resume(throwing: xAIError.rateLimitExceeded(retryAfter: retryAfter))
+                    return
+                }
+                
+                guard (200...299).contains(httpResponse.statusCode) else {
+                    if let errorResponse = try? JSONDecoder().decode(APIErrorResponse.self, from: data) {
+                        continuation.resume(throwing: xAIError.apiError(
+                            statusCode: httpResponse.statusCode,
+                            message: errorResponse.error.message
+                        ))
+                    } else {
+                        let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                        continuation.resume(throwing: xAIError.apiError(
+                            statusCode: httpResponse.statusCode,
+                            message: errorMessage
+                        ))
+                    }
+                    return
+                }
+                
+                do {
+                    let decoded = try JSONDecoder().decode(T.self, from: data)
+                    continuation.resume(returning: decoded)
+                } catch {
+                    continuation.resume(throwing: xAIError.decodingError(error))
+                }
+            }
+            task.resume()
+        }
     }
     
-    func getRemainingData() -> Data {
-        let remaining = buffer
-        buffer = Data()
-        return remaining
+    public func sendStreamingRequest(_ request: HTTPRequest) async throws -> AsyncThrowingStream<StreamEvent, Error> {
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    // Prepare CURL command
+                    var curlCommand = ["/usr/bin/curl", "-N", "--no-buffer", "-s", "-i"]
+                    
+                    // Add method
+                    curlCommand.append("-X")
+                    curlCommand.append(request.method.rawValue)
+                    
+                    // Add headers
+                    curlCommand.append("-H")
+                    curlCommand.append("Authorization: Bearer \(configuration.apiKey)")
+                    curlCommand.append("-H")
+                    curlCommand.append("Content-Type: application/json")
+                    curlCommand.append("-H")
+                    curlCommand.append("User-Agent: xAIKit/\(xAIKit.version)")
+                    curlCommand.append("-H")
+                    curlCommand.append("Accept: text/event-stream")
+                    
+                    for (key, value) in request.headers {
+                        curlCommand.append("-H")
+                        curlCommand.append("\(key): \(value)")
+                    }
+                    
+                    for (key, value) in configuration.customHeaders {
+                        curlCommand.append("-H")
+                        curlCommand.append("\(key): \(value)")
+                    }
+                    
+                    // Add body if present
+                    if let body = request.body {
+                        curlCommand.append("-d")
+                        curlCommand.append(String(data: body, encoding: .utf8) ?? "")
+                    }
+                    
+                    // Add URL
+                    curlCommand.append(request.url.absoluteString)
+                    
+                    // Create process
+                    let process = Process()
+                    process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+                    process.arguments = Array(curlCommand.dropFirst())
+                    
+                    let outputPipe = Pipe()
+                    let errorPipe = Pipe()
+                    process.standardOutput = outputPipe
+                    process.standardError = errorPipe
+                    
+                    try process.run()
+                    
+                    let outputHandle = outputPipe.fileHandleForReading
+                    var buffer = Data()
+                    var headersComplete = false
+                    var statusCode: Int = 0
+                    
+                    // Read data from process
+                    while process.isRunning || outputHandle.availableData.count > 0 {
+                        let chunk = outputHandle.availableData
+                        if chunk.isEmpty {
+                            // Small delay to avoid busy waiting
+                            try await Task.sleep(nanoseconds: 10_000_000) // 10ms
+                            continue
+                        }
+                        
+                        buffer.append(chunk)
+                        
+                        // Parse headers if not yet complete
+                        if !headersComplete {
+                            if let doubleNewlineRange = buffer.range(of: Data("\r\n\r\n".utf8)) {
+                                let headerData = buffer[..<doubleNewlineRange.lowerBound]
+                                buffer.removeSubrange(..<doubleNewlineRange.upperBound)
+                                
+                                if let headerString = String(data: headerData, encoding: .utf8) {
+                                    let lines = headerString.components(separatedBy: "\r\n")
+                                    if let statusLine = lines.first {
+                                        let components = statusLine.components(separatedBy: " ")
+                                        if components.count >= 2 {
+                                            statusCode = Int(components[1]) ?? 0
+                                        }
+                                    }
+                                    
+                                    // Check for retry-after header
+                                    var retryAfter: Int? = nil
+                                    for line in lines {
+                                        if line.lowercased().hasPrefix("retry-after:") {
+                                            let value = line.dropFirst("retry-after:".count).trimmingCharacters(in: .whitespaces)
+                                            retryAfter = Int(value)
+                                        }
+                                    }
+                                    
+                                    if statusCode == 429 {
+                                        continuation.finish(throwing: xAIError.rateLimitExceeded(retryAfter: retryAfter))
+                                        process.terminate()
+                                        return
+                                    }
+                                    
+                                    if !(200...299).contains(statusCode) {
+                                        // Collect error body
+                                        var errorData = buffer
+                                        while process.isRunning || outputHandle.availableData.count > 0 {
+                                            let chunk = outputHandle.availableData
+                                            if !chunk.isEmpty {
+                                                errorData.append(chunk)
+                                            }
+                                        }
+                                        
+                                        if let errorResponse = try? JSONDecoder().decode(APIErrorResponse.self, from: errorData) {
+                                            continuation.finish(throwing: xAIError.apiError(
+                                                statusCode: statusCode,
+                                                message: errorResponse.error.message
+                                            ))
+                                        } else {
+                                            let errorMessage = String(data: errorData, encoding: .utf8) ?? "Unknown error"
+                                            continuation.finish(throwing: xAIError.apiError(
+                                                statusCode: statusCode,
+                                                message: errorMessage
+                                            ))
+                                        }
+                                        process.terminate()
+                                        return
+                                    }
+                                }
+                                
+                                headersComplete = true
+                            }
+                        } else {
+                            // Process body data line by line
+                            while let newlineRange = buffer.range(of: Data([0x0A])) {
+                                let line = buffer[..<newlineRange.lowerBound]
+                                buffer.removeSubrange(..<newlineRange.upperBound)
+                                
+                                // Check if this is a complete SSE event (double newline)
+                                if line.isEmpty && !buffer.isEmpty {
+                                    // Look for another newline to complete the double newline
+                                    if buffer.first == 0x0A {
+                                        buffer.removeFirst()
+                                        // We have a complete event, process what we've accumulated
+                                        continuation.yield(.data(Data())) // Empty line to signal event boundary
+                                    }
+                                } else {
+                                    // Yield the line data including the newline
+                                    var lineWithNewline = line
+                                    lineWithNewline.append(0x0A)
+                                    continuation.yield(.data(lineWithNewline))
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Wait for process to complete
+                    process.waitUntilExit()
+                    
+                    // Send any remaining data
+                    if !buffer.isEmpty && headersComplete {
+                        continuation.yield(.data(buffer))
+                    }
+                    
+                    // Check if process exited with error
+                    if process.terminationStatus != 0 {
+                        let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                        let errorMessage = String(data: errorData, encoding: .utf8) ?? "CURL process failed"
+                        continuation.finish(throwing: xAIError.networkError(NetworkError(message: errorMessage)))
+                        return
+                    }
+                    
+                    continuation.yield(.done)
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
     }
 }
+#endif
 
-/// Delegate for handling streaming responses
-private final class StreamingResponseDelegate: AsyncHTTPClient.HTTPClientResponseDelegate {
-    typealias Response = Void
+/// Main HTTP client wrapper
+public final class xAIHTTPClient: HTTPClientProtocol {
+    private let configuration: xAIConfiguration
+    private let httpClient: HTTPClientProtocol
     
-    private let continuation: AsyncThrowingStream<StreamEvent, Error>.Continuation
-    private let buffer = StreamingBuffer()
-    
-    init(continuation: AsyncThrowingStream<StreamEvent, Error>.Continuation) {
-        self.continuation = continuation
+    public init(configuration: xAIConfiguration) {
+        self.configuration = configuration
+        self.httpClient = createHTTPClient(configuration: configuration)
     }
     
-    func didReceiveHead(task: HTTPClient.Task<Response>, _ head: HTTPResponseHead) -> EventLoopFuture<Void> {
-        if head.status.code == 429 {
-            let retryAfter = head.headers["Retry-After"].first.flatMap(Int.init)
-            continuation.finish(throwing: xAIError.rateLimitExceeded(retryAfter: retryAfter))
-            return task.eventLoop.makeSucceededFuture(())
-        }
-        
-        guard (200...299).contains(head.status.code) else {
-            continuation.finish(throwing: xAIError.apiError(
-                statusCode: Int(head.status.code),
-                message: "Streaming request failed"
-            ))
-            return task.eventLoop.makeSucceededFuture(())
-        }
-        
-        return task.eventLoop.makeSucceededFuture(())
+    public func sendRequest<T: Decodable>(_ request: HTTPRequest) async throws -> T {
+        return try await httpClient.sendRequest(request)
     }
     
-    func didReceiveBodyPart(task: HTTPClient.Task<Response>, _ buffer: ByteBuffer) -> EventLoopFuture<Void> {
-        let data = Data(buffer: buffer)
-        
-        Task {
-            await self.buffer.append(data)
-            let events = await self.buffer.extractEvents()
-            for eventData in events {
-                continuation.yield(.data(eventData))
-            }
-        }
-        
-        return task.eventLoop.makeSucceededFuture(())
-    }
-    
-    func didFinishRequest(task: HTTPClient.Task<Response>) throws -> Response {
-        Task {
-            let remaining = await buffer.getRemainingData()
-            if !remaining.isEmpty {
-                continuation.yield(.data(remaining))
-            }
-            continuation.yield(.done)
-            continuation.finish()
-        }
+    public func sendStreamingRequest(_ request: HTTPRequest) async throws -> AsyncThrowingStream<StreamEvent, Error> {
+        return try await httpClient.sendStreamingRequest(request)
     }
 }
