@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+  build-macos:
+    name: Build macOS Binary
+    runs-on: macos-latest
+    needs: create-release
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      
+    - name: Build Release Binary
+      run: |
+        swift build -c release --product xai-cli
+        cd .build/release
+        tar -czf xai-cli-macos.tar.gz xai-cli
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./.build/release/xai-cli-macos.tar.gz
+        asset_name: xai-cli-macos.tar.gz
+        asset_content_type: application/gzip
+
+  build-linux:
+    name: Build Linux Binary
+    runs-on: ubuntu-latest
+    needs: create-release
+    container:
+      image: swift:5.9-jammy
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y libssl-dev libcurl4-openssl-dev
+        
+    - name: Build Release Binary
+      run: |
+        swift build -c release --product xai-cli
+        cd .build/release
+        tar -czf xai-cli-linux.tar.gz xai-cli
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./.build/release/xai-cli-linux.tar.gz
+        asset_name: xai-cli-linux.tar.gz
+        asset_content_type: application/gzip
+
+  build-docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: create-release
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Extract version
+      id: extract_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          marcusziade/xaikit:latest
+          marcusziade/xaikit:${{ steps.extract_version.outputs.VERSION }}
+        platforms: linux/amd64,linux/arm64
