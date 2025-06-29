@@ -1,8 +1,6 @@
 @Tutorial(time: 25) {
     @Intro(title: "Image Generation and Editing") {
         Learn how to generate images with xAI's image models and use vision-capable chat models to analyze and suggest edits to images. You'll build an app that can create images from text prompts and intelligently edit them based on natural language instructions.
-        
-        @Image(source: "chapter-placeholder.png", alt: "Image Generation and Editing")
     }
     
     @Section(title: "Generate Your First Image") {

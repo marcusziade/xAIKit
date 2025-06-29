@@ -1,8 +1,6 @@
 @Tutorial(time: 20) {
     @Intro(title: "Building a Smart Assistant") {
         In this tutorial, you'll build a command-line AI assistant powered by xAI's Grok models. You'll learn how to send messages, handle responses, implement streaming, and add custom behaviors.
-        
-        @Image(source: "chapter-placeholder.png", alt: "Smart Assistant CLI")
     }
     
     @Section(title: "Set Up Your Project") {

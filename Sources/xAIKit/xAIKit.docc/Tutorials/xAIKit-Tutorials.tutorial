@@ -1,22 +1,16 @@
 @Tutorials(name: "xAIKit") {
     @Intro(title: "Build Intelligent Apps with xAI") {
         Learn how to integrate xAI's powerful language models into your Swift applications. These tutorials will guide you through building AI-powered features step by step.
-        
-        @Image(source: "chapter-placeholder.png", alt: "xAIKit tutorials banner")
     }
     
     @Chapter(name: "Building a Smart Assistant") {
         Create an interactive AI assistant that can answer questions, help with tasks, and engage in natural conversations using xAI's Grok models.
-        
-        @Image(source: "chapter-placeholder.png", alt: "Smart Assistant")
         
         @TutorialReference(tutorial: "doc:BuildingSmartAssistant")
     }
     
     @Chapter(name: "Image Generation and Editing") {
         Generate stunning images from text prompts and build intelligent image editing workflows using xAI's image generation and vision-capable models.
-        
-        @Image(source: "chapter-placeholder.png", alt: "Image Generation")
         
         @TutorialReference(tutorial: "doc:ImageGenerationAndEditing")
     }
