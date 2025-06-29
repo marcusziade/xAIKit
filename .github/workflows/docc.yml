@@ -42,11 +42,24 @@ jobs:
           -derivedDataPath ~/Developer/Xcode/DerivedData \
           -destination 'platform=macOS' \
           -parallelizeTargets \
-          | xcbeautify --renderer github-actions
+          OTHER_DOCC_FLAGS="--emit-digest --emit-lmdb-index" \
+          | xcbeautify --renderer github-actions || true
+        
+        echo "Build completed. Checking for archives..."
+        find ~/Developer/Xcode/DerivedData -type d -name "*.doccarchive" | head -20
 
     - name: Process Archive
       run: |
+        echo "Searching for DocC archive..."
+        find ~/Developer/Xcode/DerivedData -name "*.doccarchive" -type d || true
+        
         ARCHIVE_PATH=$(find ~/Developer/Xcode/DerivedData -name "xAIKit.doccarchive" -type d | head -n 1)
+        
+        if [ -z "$ARCHIVE_PATH" ]; then
+          echo "Error: DocC archive not found!"
+          exit 1
+        fi
+        
         echo "Archive found at: $ARCHIVE_PATH"
         
         xcrun docc process-archive transform-for-static-hosting "$ARCHIVE_PATH" \
