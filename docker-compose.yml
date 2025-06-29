@@ -1,0 +1,20 @@
+services:
+  xaikit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xaikit:latest
+    environment:
+      - XAI_API_KEY=${XAI_API_KEY}
+    volumes:
+      - ./:/app:ro
+    working_dir: /app
+    command: swift test
+    
+  xai-cli:
+    image: xaikit:latest
+    environment:
+      - XAI_API_KEY=${XAI_API_KEY}
+    stdin_open: true
+    tty: true
+    command: xai-cli
