@@ -54,4 +54,4 @@ jobs:
       run: docker build -t xaikit-test .
     
     - name: Run tests in Docker
-      run: docker run --rm xaikit-test --help
+      run: docker run --rm xaikit-test
