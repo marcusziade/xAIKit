@@ -55,13 +55,13 @@ public struct ImageGenerationRequest: Codable {
     }
     
     /// Create a minimal request with only supported xAI parameters
-    public static func xai(prompt: String, model: String = "grok-2-image") -> ImageGenerationRequest {
+    public static func xai(prompt: String, model: String = "grok-2-image", n: Int? = nil, responseFormat: ImageResponseFormat? = nil) -> ImageGenerationRequest {
         return ImageGenerationRequest(
             prompt: prompt,
             model: model,
-            n: nil,
+            n: n,
             quality: nil,
-            responseFormat: nil,
+            responseFormat: responseFormat,
             size: nil,
             style: nil,
             user: nil

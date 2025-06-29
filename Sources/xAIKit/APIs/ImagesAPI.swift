@@ -34,13 +34,16 @@ public final class ImagesAPI {
     /// - Parameters:
     ///   - prompt: Text description of the desired image(s)
     ///   - model: The model to use for generation (defaults to "grok-2-image")
+    ///   - n: Number of images to generate
+    ///   - responseFormat: Response format (url or b64_json)
     /// - Returns: The image generation response
-    /// - Note: xAI API currently only supports prompt and model parameters
     public func generate(
         prompt: String,
-        model: String = "grok-2-image"
+        model: String = "grok-2-image",
+        n: Int? = nil,
+        responseFormat: ImageResponseFormat? = nil
     ) async throws -> ImageGenerationResponse {
-        let request = ImageGenerationRequest.xai(prompt: prompt, model: model)
+        let request = ImageGenerationRequest.xai(prompt: prompt, model: model, n: n, responseFormat: responseFormat)
         return try await generate(request)
     }
     
