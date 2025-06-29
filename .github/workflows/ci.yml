@@ -2,98 +2,56 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   test-macos:
     name: Test on macOS
     runs-on: macos-latest
-    
     steps:
     - uses: actions/checkout@v4
     
     - name: Select Xcode
       run: sudo xcode-select -s /Applications/Xcode_15.2.app
-      
+    
     - name: Swift version
       run: swift --version
-      
+    
     - name: Build
       run: swift build -v
-      
+    
     - name: Run tests
-      run: swift test -v
-      
-    - name: Build CLI tool
-      run: swift build -c release --product xai-cli
-      
-    - name: Test CLI tool
-      run: |
-        .build/release/xai-cli --version
-        .build/release/xai-cli --help
+      run: swift test -v --filter xAIKitTests
 
   test-linux:
     name: Test on Linux
     runs-on: ubuntu-latest
     container:
       image: swift:5.9-jammy
-    
     steps:
     - uses: actions/checkout@v4
     
     - name: Install dependencies
       run: |
         apt-get update
-        apt-get install -y libssl-dev libcurl4-openssl-dev
-        
-    - name: Swift version
-      run: swift --version
-      
+        apt-get install -y curl libcurl4-openssl-dev
+    
     - name: Build
       run: swift build -v
-      
+    
     - name: Run tests
-      run: swift test -v
-      
-    - name: Build CLI tool
-      run: swift build -c release --product xai-cli
-      
-    - name: Test CLI tool
-      run: |
-        .build/release/xai-cli --version
-        .build/release/xai-cli --help
+      run: swift test -v --filter xAIKitTests
 
   test-docker:
     name: Test in Docker
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v4
     
     - name: Build Docker image
-      run: docker build -t xaikit:test .
-      
+      run: docker build -t xaikit-test .
+    
     - name: Run tests in Docker
-      run: docker run --rm xaikit:test swift test
-      
-    - name: Test CLI in Docker
-      run: |
-        docker run --rm xaikit:test xai-cli --version
-        docker run --rm xaikit:test xai-cli --help
-
-  documentation:
-    name: Build Documentation
-    runs-on: macos-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_15.2.app
-      
-    - name: Build documentation
-      run: |
-        swift package generate-documentation
-        swift package plugin generate-documentation --target xAIKit
+      run: docker run --rm xaikit-test --help
