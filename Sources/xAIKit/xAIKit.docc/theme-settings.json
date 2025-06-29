@@ -1,0 +1,135 @@
+{
+  "theme": {
+    "color": {
+      "standard": {
+        "red": "#FF3737",
+        "orange": "#FF8C00",
+        "yellow": "#FFD700",
+        "green": "#00C853",
+        "mint": "#00E5FF",
+        "teal": "#00ACC1",
+        "cyan": "#00BCD4",
+        "blue": "#1E90FF",
+        "indigo": "#3F51B5",
+        "purple": "#7C4DFF",
+        "pink": "#FF4081",
+        "brown": "#795548",
+        "gray": "#9E9E9E"
+      },
+      "documentation": {
+        "text": "#000000",
+        "link": "#1E90FF",
+        "secondaryLabel": "#666666",
+        "tertiaryLabel": "#999999",
+        "quaternaryLabel": "#CCCCCC",
+        "background": "#FFFFFF",
+        "secondaryBackground": "#F5F5F5",
+        "tertiaryBackground": "#EEEEEE",
+        "groupedBackground": "#F9F9F9",
+        "secondaryGroupedBackground": "#FFFFFF",
+        "tertiaryGroupedBackground": "#F5F5F5",
+        "separator": "#E0E0E0",
+        "secondarySeparator": "#F0F0F0",
+        "accent": "#1E90FF",
+        "fill": "#F0F0F0",
+        "secondaryFill": "#E8E8E8",
+        "tertiaryFill": "#E0E0E0",
+        "quaternaryFill": "#D8D8D8",
+        "figureGray": "#666666",
+        "figureGray2": "#999999",
+        "figureGray3": "#CCCCCC",
+        "figureGray4": "#E0E0E0",
+        "figureGray5": "#F0F0F0",
+        "figureGray6": "#F8F8F8",
+        "figureBlue": "#1E90FF",
+        "figureGreen": "#00C853",
+        "figureOrange": "#FF8C00",
+        "figurePurple": "#7C4DFF",
+        "figureRed": "#FF3737",
+        "figureTeal": "#00ACC1",
+        "figureYellow": "#FFD700",
+        "aside": {
+          "note": {
+            "background": "#E3F2FD",
+            "border": "#1E90FF"
+          },
+          "tip": {
+            "background": "#E8F5E9",
+            "border": "#00C853"
+          },
+          "important": {
+            "background": "#FFF3E0",
+            "border": "#FF8C00"
+          },
+          "experiment": {
+            "background": "#F3E5F5",
+            "border": "#7C4DFF"
+          }
+        },
+        "changeHighlight": {
+          "added": "#E8F5E9",
+          "deleted": "#FFEBEE",
+          "modified": "#FFF3E0"
+        },
+        "codeListing": {
+          "syntax": {
+            "comment": "#6A737D",
+            "quote": "#032F62",
+            "keyword": "#D73A49",
+            "attribute": "#D73A49",
+            "call": "#6F42C1",
+            "string": "#032F62",
+            "number": "#005CC5",
+            "plain": "#24292E"
+          }
+        }
+      },
+      "tutorials": {
+        "background": "#000000",
+        "backgroundAlt": "#0A0A0A",
+        "backgroundAlt2": "#141414",
+        "backgroundAlt3": "#1E1E1E",
+        "text": "#FFFFFF",
+        "link": "#1E90FF",
+        "accent": "#1E90FF",
+        "fill": "#1A1A1A",
+        "fillSecondary": "#2A2A2A",
+        "primaryContent": {
+          "background": "#000000",
+          "border": "#1E90FF"
+        },
+        "intro": {
+          "fill": "#1E90FF",
+          "accent": "#FFFFFF"
+        },
+        "aside": {
+          "note": {
+            "background": "#0D47A1",
+            "border": "#1E90FF"
+          },
+          "tip": {
+            "background": "#1B5E20",
+            "border": "#00C853"
+          },
+          "important": {
+            "background": "#E65100",
+            "border": "#FF8C00"
+          },
+          "experiment": {
+            "background": "#4A148C",
+            "border": "#7C4DFF"
+          }
+        }
+      },
+      "launch": {
+        "background": "#000000",
+        "backgroundAlt": "#0A0A0A",
+        "text": "#FFFFFF",
+        "title": "#FFFFFF",
+        "descriptionText": "#CCCCCC",
+        "primary": "#1E90FF",
+        "border": "#1E90FF"
+      }
+    }
+  }
+}

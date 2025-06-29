@@ -1,0 +1,173 @@
+@Tutorial(time: 25) {
+    @Intro(title: "Image Generation and Editing") {
+        Learn how to generate images with xAI's image models and use vision-capable chat models to analyze and suggest edits to images. You'll build an app that can create images from text prompts and intelligently edit them based on natural language instructions.
+        
+        @Image(source: "chapter-placeholder.png", alt: "Image Generation and Editing")
+    }
+    
+    @Section(title: "Generate Your First Image") {
+        @ContentAndMedia {
+            Let's start by generating images using xAI's image generation models.
+        }
+        
+        @Steps {
+            @Step {
+                Set up your project with xAIKit.
+                
+                @Code(name: "main.swift", file: "13-image-setup.swift")
+            }
+            
+            @Step {
+                Generate a simple image from a text prompt.
+                
+                @Code(name: "main.swift", file: "14-generate-image.swift")
+            }
+            
+            @Step {
+                Handle the response and display the image URL.
+                
+                @Code(name: "main.swift", file: "15-display-image-url.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Generate Multiple Images") {
+        @ContentAndMedia {
+            Generate multiple variations of an image from a single prompt.
+        }
+        
+        @Steps {
+            @Step {
+                Request multiple images with different variations.
+                
+                @Code(name: "main.swift", file: "16-multiple-images.swift")
+            }
+            
+            @Step {
+                Save generated images to disk for further processing.
+                
+                @Code(name: "main.swift", file: "17-save-images.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Analyze Images with Vision Models") {
+        @ContentAndMedia {
+            Use vision-capable chat models to analyze and understand images.
+        }
+        
+        @Steps {
+            @Step {
+                Send an image to a vision-capable model for analysis.
+                
+                @Code(name: "main.swift", file: "18-analyze-image.swift")
+            }
+            
+            @Step {
+                Ask specific questions about the image content.
+                
+                @Code(name: "main.swift", file: "19-image-questions.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Image Editing Workflow") {
+        @ContentAndMedia {
+            Build a complete image editing workflow that combines generation and vision analysis.
+        }
+        
+        @Steps {
+            @Step {
+                Create a function to analyze an image and suggest edits.
+                
+                @Code(name: "main.swift", file: "20-edit-suggestions.swift")
+            }
+            
+            @Step {
+                Generate a new image based on the edit suggestions.
+                
+                @Code(name: "main.swift", file: "21-apply-edits.swift")
+            }
+            
+            @Step {
+                Build an interactive image editing assistant.
+                
+                @Code(name: "main.swift", file: "22-complete-editor.swift")
+            }
+        }
+    }
+    
+    @Assessments {
+        @MultipleChoice {
+            Which model should you use for image generation in xAI?
+            
+            @Choice(isCorrect: true) {
+                grok-2-image
+                
+                @Justification(reaction: "Correct!") {
+                    grok-2-image is xAI's dedicated image generation model designed for creating images from text prompts.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                grok-3-mini-fast-latest
+                
+                @Justification(reaction: "Not quite") {
+                    This is a language model. While it can analyze images when they support vision, it cannot generate images.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                grok-beta
+                
+                @Justification(reaction: "Incorrect") {
+                    grok-beta is a chat model, not an image generation model.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                grok-3-fast-latest
+                
+                @Justification(reaction: "Not correct") {
+                    This is a language model that may support vision input but not image generation.
+                }
+            }
+        }
+        
+        @MultipleChoice {
+            How do you send an image to a vision-capable chat model in xAIKit?
+            
+            @Choice(isCorrect: false) {
+                As a base64 encoded string in the message content
+                
+                @Justification(reaction: "Not quite") {
+                    While base64 encoding is one way to handle images, xAIKit uses a structured content approach.
+                }
+            }
+            
+            @Choice(isCorrect: true) {
+                Using ChatMessage with an array of Content parts including image URLs
+                
+                @Justification(reaction: "Exactly!") {
+                    xAIKit uses structured content with ChatMessage.Content.image(url:) to send images to vision models.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                By uploading the image first and getting an image ID
+                
+                @Justification(reaction: "Incorrect") {
+                    xAI's API accepts image URLs directly; there's no separate upload step.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                Images cannot be sent to chat models
+                
+                @Justification(reaction: "Not correct") {
+                    Many xAI chat models support vision and can analyze images sent as part of the message content.
+                }
+            }
+        }
+    }
+}

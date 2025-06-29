@@ -1,0 +1,193 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Building a Smart Assistant") {
+        In this tutorial, you'll build a command-line AI assistant powered by xAI's Grok models. You'll learn how to send messages, handle responses, implement streaming, and add custom behaviors.
+        
+        @Image(source: "chapter-placeholder.png", alt: "Smart Assistant CLI")
+    }
+    
+    @Section(title: "Set Up Your Project") {
+        @ContentAndMedia {
+            First, let's create a new Swift package and add xAIKit as a dependency.
+        }
+        
+        @Steps {
+            @Step {
+                Create a new Swift package for your assistant.
+                
+                @Code(name: "Terminal", file: "01-create-package.sh")
+            }
+            
+            @Step {
+                Add xAIKit as a dependency in your Package.swift file.
+                
+                @Code(name: "Package.swift", file: "02-package-swift.swift")
+            }
+            
+            @Step {
+                Create the main entry point for your assistant.
+                
+                @Code(name: "main.swift", file: "03-main-empty.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Initialize the Client") {
+        @ContentAndMedia {
+            Now we'll set up the xAI client and handle API key configuration.
+        }
+        
+        @Steps {
+            @Step {
+                Import xAIKit and create the client with your API key.
+                
+                @Code(name: "main.swift", file: "04-initialize-client.swift")
+            }
+            
+            @Step {
+                Add error handling and async/await support.
+                
+                @Code(name: "main.swift", file: "05-async-main.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Create Your First Conversation") {
+        @ContentAndMedia {
+            Let's implement basic message sending and response handling.
+        }
+        
+        @Steps {
+            @Step {
+                Send your first message to Grok.
+                
+                @Code(name: "main.swift", file: "06-send-message.swift")
+            }
+            
+            @Step {
+                Handle the response and display it nicely.
+                
+                @Code(name: "main.swift", file: "07-handle-response.swift")
+            }
+            
+            @Step {
+                Add a conversation loop for interactive chat.
+                
+                @Code(name: "main.swift", file: "08-conversation-loop.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Add Streaming Responses") {
+        @ContentAndMedia {
+            Enhance the user experience with real-time streaming responses.
+        }
+        
+        @Steps {
+            @Step {
+                Convert to streaming API for real-time responses.
+                
+                @Code(name: "main.swift", file: "09-streaming-api.swift")
+            }
+            
+            @Step {
+                Handle streaming chunks and display them smoothly.
+                
+                @Code(name: "main.swift", file: "10-process-chunks.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Add System Instructions") {
+        @ContentAndMedia {
+            Customize your assistant's personality and capabilities with system instructions.
+        }
+        
+        @Steps {
+            @Step {
+                Add a system message to define your assistant's behavior.
+                
+                @Code(name: "main.swift", file: "11-system-instructions.swift")
+            }
+            
+            @Step {
+                Complete your smart assistant with enhanced UI and commands.
+                
+                @Code(name: "main.swift", file: "12-complete-assistant.swift")
+            }
+        }
+    }
+    
+    @Assessments {
+        @MultipleChoice {
+            What is the purpose of system instructions in a chat conversation?
+            
+            @Choice(isCorrect: false) {
+                To authenticate with the API
+                
+                @Justification(reaction: "Incorrect") {
+                    System instructions don't handle authentication. They define the assistant's behavior and personality.
+                }
+            }
+            
+            @Choice(isCorrect: true) {
+                To define the assistant's behavior and context
+                
+                @Justification(reaction: "Correct!") {
+                    System instructions set the context and personality for your assistant, guiding how it responds to users.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                To increase the response speed
+                
+                @Justification(reaction: "Not quite") {
+                    System instructions don't affect response speed. They provide context for better responses.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                To reduce API costs
+                
+                @Justification(reaction: "Incorrect") {
+                    System instructions actually add to the token count and may slightly increase costs.
+                }
+            }
+        }
+        
+        @MultipleChoice {
+            What is the main benefit of using streaming responses?
+            
+            @Choice(isCorrect: false) {
+                Lower API costs
+                
+                @Justification(reaction: "Not quite") {
+                    Streaming doesn't reduce API costs. You're still charged for the same number of tokens.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                More accurate responses
+                
+                @Justification(reaction: "Incorrect") {
+                    Streaming doesn't affect response accuracy. The same model generates both streaming and non-streaming responses.
+                }
+            }
+            
+            @Choice(isCorrect: true) {
+                Better user experience with real-time feedback
+                
+                @Justification(reaction: "Exactly!") {
+                    Streaming provides immediate feedback as the response is generated, making the interaction feel more natural and responsive.
+                }
+            }
+            
+            @Choice(isCorrect: false) {
+                Automatic error handling
+                
+                @Justification(reaction: "Not correct") {
+                    Streaming doesn't provide automatic error handling. You still need to handle errors manually.
+                }
+            }
+        }
+    }
+}
