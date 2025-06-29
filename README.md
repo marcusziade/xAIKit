@@ -12,6 +12,7 @@ Swift SDK for xAI's API with support for Grok models, image generation, and visi
 
 - **Complete API Coverage** - Chat completions, image generation, vision, and model management
 - **Streaming Support** - Real-time streaming responses
+- **Image Generation** - Generate images with Grok models
 - **Type-Safe** - Full Swift type safety and modern concurrency
 - **Cross-Platform** - macOS, iOS, tvOS, watchOS, visionOS, and Linux
 - **CLI Tool** - Command-line interface for all features
