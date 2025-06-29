@@ -8,7 +8,39 @@ final class ModelTests: XCTestCase {
     func testChatMessageCreation() {
         let message = ChatMessage(role: .user, content: "Hello")
         XCTAssertEqual(message.role, .user)
-        XCTAssertEqual(message.content, "Hello")
+        XCTAssertEqual(message.stringContent, "Hello")
+        
+        // Test the content enum directly
+        if case .text(let text) = message.content {
+            XCTAssertEqual(text, "Hello")
+        } else {
+            XCTFail("Expected text content")
+        }
+    }
+    
+    func testChatMessageWithImageContent() {
+        let imageContent = ChatMessage.Content.image(url: "https://example.com/image.jpg")
+        let textContent = ChatMessage.Content.text("Check this out")
+        let message = ChatMessage(role: .user, content: [imageContent, textContent])
+        
+        XCTAssertEqual(message.role, .user)
+        XCTAssertEqual(message.stringContent, "Check this out")
+        
+        if case .parts(let parts) = message.content {
+            XCTAssertEqual(parts.count, 2)
+            if case .image(let url) = parts[0] {
+                XCTAssertEqual(url, "https://example.com/image.jpg")
+            } else {
+                XCTFail("Expected image content")
+            }
+            if case .text(let text) = parts[1] {
+                XCTAssertEqual(text, "Check this out")
+            } else {
+                XCTFail("Expected text content")
+            }
+        } else {
+            XCTFail("Expected parts content")
+        }
     }
     
     func testChatRoleRawValues() {
