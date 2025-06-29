@@ -310,7 +310,7 @@ struct MessagesStream: xAICommand {
 struct Images: xAICommand {
     static let configuration = CommandConfiguration(
         abstract: "Image generation commands",
-        subcommands: [ImagesGenerate.self]
+        subcommands: [ImagesGenerate.self, ImagesEdit.self]
     )
     
     @Option(help: "API key")
@@ -356,8 +356,8 @@ struct ImagesGenerate: xAICommand {
     func run() async throws {
         let client = try createClient()
         
-        // xAI API currently only supports prompt and model
-        let request = ImageGenerationRequest.xai(prompt: prompt, model: model)
+        let responseFormat: ImageResponseFormat? = base64 ? .b64Json : .url
+        let request = ImageGenerationRequest.xai(prompt: prompt, model: model, n: n > 1 ? n : nil, responseFormat: responseFormat)
         
         let response = try await client.images.generate(request)
         
@@ -374,8 +374,84 @@ struct ImagesGenerate: xAICommand {
             }
         }
         
-        if quality != nil || style != nil || size != "1024x1024" || n != 1 {
-            print("\nNote: xAI API currently only supports 'prompt' and 'model' parameters. Other parameters were ignored.")
+        if quality != nil || style != nil || size != "1024x1024" {
+            print("\nNote: xAI API may not support quality, style, or size parameters. These were ignored.")
+        }
+    }
+}
+
+struct ImagesEdit: xAICommand {
+    static let configuration = CommandConfiguration(
+        commandName: "edit",
+        abstract: "Analyze an image and suggest edits using vision-capable chat models"
+    )
+    
+    @Option(help: "API key")
+    var apiKey: String?
+    
+    @Option(help: "API base URL")
+    var apiURL: String?
+    
+    @Argument(help: "URL of the image to analyze")
+    var imageURL: String
+    
+    @Argument(help: "Edit instruction or question about the image")
+    var instruction: String
+    
+    @Option(help: "The model to use (must support image input)")
+    var model: String = "grok-2-vision"
+    
+    @Option(help: "Maximum tokens to generate")
+    var maxTokens: Int?
+    
+    @Flag(help: "Generate a new image based on the edit suggestions")
+    var generateNew = false
+    
+    func run() async throws {
+        let client = try createClient()
+        
+        // Create a chat message with image content
+        let imageContent = ChatMessage.Content.image(url: imageURL)
+        let textContent = ChatMessage.Content.text(instruction)
+        
+        let message = ChatMessage(role: .user, content: [imageContent, textContent])
+        
+        print("Analyzing image and processing edit request...")
+        
+        let response = try await client.chat.completions(
+            messages: [message],
+            model: model,
+            maxTokens: maxTokens
+        )
+        
+        if let content = response.choices.first?.message.content {
+            print("\nAnalysis and suggestions:")
+            print(content)
+            
+            // If requested, generate a new image based on the suggestions
+            if generateNew {
+                print("\nGenerating new image based on suggestions...")
+                
+                // Extract the edit suggestions to create a new prompt
+                let newPrompt = "Based on these suggestions: \(content)\n\nGenerate: \(instruction)"
+                
+                do {
+                    let imageResponse = try await client.images.generate(prompt: newPrompt, model: "grok-2-image")
+                    
+                    if let url = imageResponse.data.first?.url {
+                        print("\nNew image generated:")
+                        print("URL: \(url)")
+                    }
+                } catch {
+                    print("\nError generating new image: \(error)")
+                }
+            }
+        }
+        
+        print("\n---")
+        print("Model: \(response.model)")
+        if let usage = response.usage {
+            print("Tokens: \(usage.promptTokens) prompt + \(usage.completionTokens) completion = \(usage.totalTokens) total")
         }
     }
 }
