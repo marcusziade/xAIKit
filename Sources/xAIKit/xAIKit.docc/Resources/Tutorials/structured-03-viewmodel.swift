@@ -23,14 +23,46 @@ class RecipeParserViewModel: ObservableObject {
         parsedRecipe = nil
         
         do {
-            // Create a request with json_object response format
+            // For xAI: Use json_object response format
+            // This guarantees JSON output but doesn't enforce schema validation
             let responseFormat = ResponseFormat(type: .jsonObject, jsonSchema: nil)
+            
+            // For OpenAI-compatible APIs: You can use json_schema with full validation
+            // let schema: [String: Any] = [
+            //     "type": "object",
+            //     "properties": [
+            //         "name": ["type": "string"],
+            //         "servings": ["type": "integer", "minimum": 1],
+            //         "prepTime": ["type": "integer", "minimum": 0],
+            //         "cookTime": ["type": "integer", "minimum": 0],
+            //         "difficulty": ["type": "string", "enum": ["easy", "medium", "hard"]],
+            //         "ingredients": [
+            //             "type": "array",
+            //             "items": [
+            //                 "type": "object",
+            //                 "properties": [
+            //                     "name": ["type": "string"],
+            //                     "amount": ["type": "string"],
+            //                     "unit": ["type": "string"]
+            //                 ],
+            //                 "required": ["name", "amount"]
+            //             ]
+            //         ],
+            //         "instructions": [
+            //             "type": "array",
+            //             "items": ["type": "string"]
+            //         ]
+            //     ],
+            //     "required": ["name", "servings", "prepTime", "cookTime", "difficulty", "ingredients", "instructions"]
+            // ]
+            // let jsonSchema = JSONSchema(name: "recipe", strict: true, schema: schema)
+            // let responseFormat = ResponseFormat(type: .jsonSchema, jsonSchema: jsonSchema)
             
             let messages = [
                 ChatMessage(
                     role: .system,
                     content: """
-                    You are a helpful recipe parser. Extract recipe information from the provided text and return it as a JSON object with this structure:
+                    You are a helpful recipe parser. Extract recipe information from the provided text and return it as a JSON object with this EXACT structure:
                     {
                         "name": "Recipe Name",
                         "servings": 4,
@@ -42,6 +74,7 @@ class RecipeParserViewModel: ObservableObject {
                         ],
                         "instructions": ["Step 1", "Step 2"]
                     }
+                    IMPORTANT: Return ONLY valid JSON. All fields are required.
                     """
                 ),
                 ChatMessage(

@@ -786,7 +786,7 @@ struct CompleteAnthropic: xAICommand {
 
 struct TestStructuredOutput: xAICommand {
     static let configuration = CommandConfiguration(
-        abstract: "Test structured output functionality with JSON schemas"
+        abstract: "Test structured output functionality (json_object for xAI, json_schema for OpenAI)"
     )
     
     @Option(help: "API key")
@@ -829,8 +829,8 @@ struct TestStructuredOutput: xAICommand {
     }
     
     private func testJsonObject(client: xAIClient) async throws {
-        print("Testing JSON Object Response Format")
-        print("===================================\n")
+        print("Testing JSON Object Response Format (xAI Compatible)")
+        print("===================================================\n")
         
         let responseFormat = ResponseFormat(
             type: .jsonObject,
@@ -886,8 +886,10 @@ struct TestStructuredOutput: xAICommand {
     }
     
     private func testSimpleSchema(client: xAIClient) async throws {
-        print("Testing Simple Structured Output")
-        print("================================\n")
+        print("Testing Simple Structured Output (OpenAI Compatible)")
+        print("==================================================\n")
+        print("Note: This uses json_schema format which is not supported by xAI API.")
+        print("xAI will timeout with this format. Use json_object instead.\n")
         
         let schema: [String: Any] = [
             "type": "object",
@@ -965,8 +967,10 @@ struct TestStructuredOutput: xAICommand {
     }
     
     private func testComplexSchema(client: xAIClient) async throws {
-        print("Testing Complex Structured Output")
-        print("=================================\n")
+        print("Testing Complex Structured Output (OpenAI Compatible)")
+        print("===================================================\n")
+        print("Note: This uses json_schema format which is not supported by xAI API.")
+        print("xAI will timeout with this format. Use json_object instead.\n")
         
         let schema: [String: Any] = [
             "type": "object",

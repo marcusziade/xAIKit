@@ -2,14 +2,20 @@
     @XcodeRequirement(title: "Xcode 16.0 or later", destination: "https://developer.apple.com/xcode/")
     
     @Intro(title: "Working with Structured Outputs") {
-        Learn how to use structured outputs to get consistent, type-safe JSON responses from xAI models. Build a SwiftUI app that extracts structured data from unstructured text.
+        Learn how to use structured outputs to get consistent, type-safe JSON responses from AI models. Build a SwiftUI app that extracts structured data from unstructured text.
+        
+        Note: xAI currently supports `json_object` response format, which guarantees JSON output. Full schema validation with `json_schema` is available for OpenAI-compatible APIs. xAI's beta parse API with Pydantic-style schemas is not yet implemented in this SDK.
         
         @Image(source: "smart-assistant", alt: "An AI assistant providing structured responses")
     }
     
     @Section(title: "Understanding Structured Outputs") {
         @ContentAndMedia {
-            Structured outputs ensure that AI responses follow a specific format, making them easier to parse and use in your applications. xAI supports the `json_object` response format, which guarantees JSON output.
+            Structured outputs ensure that AI responses follow a specific format, making them easier to parse and use in your applications. There are two main approaches:
+            
+            **1. `json_object` format** (supported by xAI): Guarantees JSON output but relies on prompting for structure.
+            
+            **2. `json_schema` format** (OpenAI-compatible): Enforces strict schema validation.
             
             In this tutorial, you'll build a recipe parser app that extracts structured recipe data from plain text descriptions.
             
@@ -30,7 +36,7 @@
             }
             
             @Step {
-                Create a view model that uses xAIKit to extract structured data from text.
+                Create a view model that uses xAIKit to extract structured data from text. Note how we use `json_object` format with detailed prompting for xAI, and show the commented `json_schema` approach for OpenAI-compatible APIs.
                 
                 @Code(name: "RecipeParserViewModel.swift", file: "structured-03-viewmodel.swift")
             }
@@ -89,6 +95,22 @@
                 Create a comprehensive view to display all the structured data.
                 
                 @Code(name: "AdvancedRecipeView.swift", file: "structured-09-advanced-view.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Structured Output Methods Comparison") {
+        @ContentAndMedia {
+            Understanding the different approaches to structured outputs helps you choose the right method for your API provider.
+            
+            @Image(source: "smart-assistant", alt: "Structured output comparison")
+        }
+        
+        @Steps {
+            @Step {
+                Compare the different structured output approaches: `json_object` (xAI), `json_schema` (OpenAI), and the future beta parse API.
+                
+                @Code(name: "StructuredOutputComparison.swift", file: "structured-10-schema-comparison.swift")
             }
         }
     }

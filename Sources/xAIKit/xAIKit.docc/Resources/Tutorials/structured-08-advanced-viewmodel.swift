@@ -22,7 +22,12 @@ class AdvancedRecipeParserViewModel: ObservableObject {
         parsedRecipe = nil
         
         do {
+            // For xAI: Use json_object response format
             let responseFormat = ResponseFormat(type: .jsonObject, jsonSchema: nil)
+            
+            // Note: For APIs that support json_schema (like OpenAI), you could define
+            // a complete JSON schema here for validation. xAI currently only supports
+            // json_object format, so we rely on detailed prompting for structure.
             
             let systemPrompt = """
             You are an expert recipe parser and nutritionist. Extract detailed recipe information and return JSON with this structure:
