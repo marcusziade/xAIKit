@@ -138,12 +138,108 @@ public struct ChatMessage: Codable {
     /// The role of the message author
     public let role: ChatRole
     
-    /// The content of the message
-    public let content: String
+    /// The content of the message - can be a string or array of content parts
+    public let content: ChatMessageContent
     
     public init(role: ChatRole, content: String) {
         self.role = role
-        self.content = content
+        self.content = .text(content)
+    }
+    
+    public init(role: ChatRole, content: [Content]) {
+        self.role = role
+        self.content = .parts(content)
+    }
+    
+    /// Convenience getter for string content
+    public var stringContent: String? {
+        switch content {
+        case .text(let str):
+            return str
+        case .parts(let parts):
+            return parts.compactMap { part in
+                if case .text(let str) = part {
+                    return str
+                }
+                return nil
+            }.joined(separator: " ")
+        }
+    }
+}
+
+/// Message content that can be either a string or array of content parts
+public enum ChatMessageContent: Codable {
+    case text(String)
+    case parts([ChatMessage.Content])
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let text = try? container.decode(String.self) {
+            self = .text(text)
+        } else if let parts = try? container.decode([ChatMessage.Content].self) {
+            self = .parts(parts)
+        } else {
+            throw DecodingError.typeMismatch(ChatMessageContent.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected String or [Content]"))
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .text(let text):
+            try container.encode(text)
+        case .parts(let parts):
+            try container.encode(parts)
+        }
+    }
+}
+
+extension ChatMessage {
+    /// Content part that can be text or image
+    public enum Content: Codable {
+        case text(String)
+        case image(url: String)
+        
+        enum CodingKeys: String, CodingKey {
+            case type
+            case text
+            case image
+        }
+        
+        enum ImageKeys: String, CodingKey {
+            case url
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let type = try container.decode(String.self, forKey: .type)
+            
+            switch type {
+            case "text":
+                let text = try container.decode(String.self, forKey: .text)
+                self = .text(text)
+            case "image":
+                let imageContainer = try container.nestedContainer(keyedBy: ImageKeys.self, forKey: .image)
+                let url = try imageContainer.decode(String.self, forKey: .url)
+                self = .image(url: url)
+            default:
+                throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown content type: \(type)")
+            }
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            
+            switch self {
+            case .text(let text):
+                try container.encode("text", forKey: .type)
+                try container.encode(text, forKey: .text)
+            case .image(let url):
+                try container.encode("image", forKey: .type)
+                var imageContainer = container.nestedContainer(keyedBy: ImageKeys.self, forKey: .image)
+                try imageContainer.encode(url, forKey: .url)
+            }
+        }
     }
 }
 
