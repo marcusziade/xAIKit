@@ -56,7 +56,7 @@ xai-cli chat complete "What is Swift?"
 xai-cli images generate "A futuristic city"
 
 # Analyze image with vision
-xai-cli images edit "image-url" "What do you see?" --model grok-2-vision
+xai-cli images analyze "image-url" "What do you see?" --model grok-2-vision
 ```
 
 ## Requirements
