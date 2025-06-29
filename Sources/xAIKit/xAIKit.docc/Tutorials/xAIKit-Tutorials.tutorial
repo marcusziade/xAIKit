@@ -9,9 +9,9 @@
         @TutorialReference(tutorial: "doc:BuildingSmartAssistant")
     }
     
-    @Chapter(name: "Image Generation and Editing") {
-        Generate stunning images from text prompts and build intelligent image editing workflows using xAI's image generation and vision-capable models.
+    @Chapter(name: "Image Generation and Analysis") {
+        Generate stunning images from text prompts and analyze images using xAI's image generation and vision-capable models.
         
-        @TutorialReference(tutorial: "doc:ImageGenerationAndEditing")
+        @TutorialReference(tutorial: "doc:ImageGenerationAndAnalysis")
     }
 }

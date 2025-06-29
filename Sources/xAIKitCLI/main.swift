@@ -310,7 +310,7 @@ struct MessagesStream: xAICommand {
 struct Images: xAICommand {
     static let configuration = CommandConfiguration(
         abstract: "Image generation commands",
-        subcommands: [ImagesGenerate.self, ImagesEdit.self]
+        subcommands: [ImagesGenerate.self, ImagesAnalyze.self]
     )
     
     @Option(help: "API key")
@@ -380,10 +380,10 @@ struct ImagesGenerate: xAICommand {
     }
 }
 
-struct ImagesEdit: xAICommand {
+struct ImagesAnalyze: xAICommand {
     static let configuration = CommandConfiguration(
-        commandName: "edit",
-        abstract: "Analyze an image and suggest edits using vision-capable chat models"
+        commandName: "analyze",
+        abstract: "Analyze an image using vision-capable chat models"
     )
     
     @Option(help: "API key")
@@ -395,7 +395,7 @@ struct ImagesEdit: xAICommand {
     @Argument(help: "URL of the image to analyze")
     var imageURL: String
     
-    @Argument(help: "Edit instruction or question about the image")
+    @Argument(help: "Instruction or question about the image")
     var instruction: String
     
     @Option(help: "The model to use (must support image input)")
@@ -404,7 +404,7 @@ struct ImagesEdit: xAICommand {
     @Option(help: "Maximum tokens to generate")
     var maxTokens: Int?
     
-    @Flag(help: "Generate a new image based on the edit suggestions")
+    @Flag(help: "Generate a new image based on the analysis")
     var generateNew = false
     
     func run() async throws {
@@ -416,7 +416,7 @@ struct ImagesEdit: xAICommand {
         
         let message = ChatMessage(role: .user, content: [imageContent, textContent])
         
-        print("Analyzing image and processing edit request...")
+        print("Analyzing image...")
         
         let response = try await client.chat.completions(
             messages: [message],
@@ -432,15 +432,34 @@ struct ImagesEdit: xAICommand {
             if generateNew {
                 print("\nGenerating new image based on suggestions...")
                 
-                // Extract the edit suggestions to create a new prompt
-                let newPrompt = "Based on these suggestions: \(content)\n\nGenerate: \(instruction)"
+                // Create a concise prompt based on the instruction
+                // First, ask the vision model for a concise prompt
+                let promptMessage = ChatMessage(
+                    role: .user,
+                    content: "Based on the image analysis, create a concise image generation prompt (max 100 words) for: \(instruction). Reply with ONLY the prompt, no explanations."
+                )
                 
                 do {
-                    let imageResponse = try await client.images.generate(prompt: newPrompt, model: "grok-2-image")
+                    let promptResponse = try await client.chat.completions(
+                        messages: [message, ChatMessage(role: .assistant, content: content), promptMessage],
+                        model: model,
+                        maxTokens: 150,
+                        temperature: 0.3
+                    )
                     
-                    if let url = imageResponse.data.first?.url {
-                        print("\nNew image generated:")
-                        print("URL: \(url)")
+                    if let newPrompt = promptResponse.choices.first?.message.content?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                        // Ensure prompt is under 1024 characters
+                        let finalPrompt = String(newPrompt.prefix(1000))
+                        
+                        let imageResponse = try await client.images.generate(prompt: finalPrompt, model: "grok-2-image")
+                        
+                        if let url = imageResponse.data.first?.url {
+                            print("\nNew image generated:")
+                            print("URL: \(url)")
+                            if let revisedPrompt = imageResponse.data.first?.revisedPrompt {
+                                print("Revised prompt: \(revisedPrompt)")
+                            }
+                        }
                     }
                 } catch {
                     print("\nError generating new image: \(error)")
