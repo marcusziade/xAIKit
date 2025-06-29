@@ -1,0 +1,91 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Image Generation and Analysis") {
+        Learn how to generate images from text prompts and analyze existing images using xAI's powerful models.
+        
+        @Image(source: "xaikit-logo.png", alt: "xAIKit logo")
+    }
+    
+    @Section(title: "Generating Images") {
+        @ContentAndMedia {
+            Create stunning images from text descriptions using xAI's image generation models.
+            
+            @Image(source: "xaikit-logo.png", alt: "xAIKit logo")
+        }
+        
+        @Steps {
+            @Step {
+                Import xAIKit and create a client instance.
+                
+                @Code(name: "ImageGenerator.swift", file: "01-image-setup.swift")
+            }
+            
+            @Step {
+                Generate an image from a text prompt.
+                
+                @Code(name: "ImageGenerator.swift", file: "02-generate-image.swift")
+            }
+            
+            @Step {
+                Handle the response and display the generated image URL.
+                
+                @Code(name: "ImageGenerator.swift", file: "03-display-result.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Analyzing Images with Vision") {
+        @ContentAndMedia {
+            Use vision-capable models to analyze and understand images.
+            
+            @Image(source: "xaikit-logo.png", alt: "xAIKit logo")
+        }
+        
+        @Steps {
+            @Step {
+                Create a chat message with image content.
+                
+                @Code(name: "ImageAnalyzer.swift", file: "04-vision-setup.swift")
+            }
+            
+            @Step {
+                Send the image to a vision-capable model for analysis.
+                
+                @Code(name: "ImageAnalyzer.swift", file: "05-analyze-image.swift")
+            }
+            
+            @Step {
+                Process the analysis results.
+                
+                @Code(name: "ImageAnalyzer.swift", file: "06-process-analysis.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Combining Generation and Analysis") {
+        @ContentAndMedia {
+            Create a workflow that analyzes an image and generates a new one based on the analysis.
+            
+            @Image(source: "xaikit-logo.png", alt: "xAIKit logo")
+        }
+        
+        @Steps {
+            @Step {
+                Set up the combined workflow.
+                
+                @Code(name: "ImageWorkflow.swift", file: "07-workflow-setup.swift")
+            }
+            
+            @Step {
+                Analyze an image and extract key features.
+                
+                @Code(name: "ImageWorkflow.swift", file: "08-extract-features.swift")
+            }
+            
+            @Step {
+                Generate a new image based on the analysis.
+                
+                @Code(name: "ImageWorkflow.swift", file: "09-generate-variation.swift")
+            }
+        }
+    }
+}
