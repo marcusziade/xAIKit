@@ -5,6 +5,11 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
 
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
 jobs:
   create-release:
     name: Create Release
