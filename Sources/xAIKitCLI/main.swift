@@ -15,7 +15,8 @@ struct xAICLI: AsyncParsableCommand {
             Models.self,
             Tokenize.self,
             APIKey.self,
-            Complete.self
+            Complete.self,
+            TestStructuredOutput.self
         ]
     )
 }
@@ -777,6 +778,304 @@ struct CompleteAnthropic: xAICommand {
         print("Model: \(response.model)")
         if let stopReason = response.stopReason {
             print("Stop reason: \(stopReason.rawValue)")
+        }
+    }
+}
+
+// MARK: - Test Structured Output Command
+
+struct TestStructuredOutput: xAICommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Test structured output functionality with JSON schemas"
+    )
+    
+    @Option(help: "API key")
+    var apiKey: String?
+    
+    @Option(help: "API URL")
+    var apiURL: String?
+    
+    @Option(help: "Model to use")
+    var model: String = "grok-3-mini-fast"
+    
+    @Option(help: "Test type: simple, complex, json-object, or all")
+    var testType: String = "all"
+    
+    @Flag(help: "Output raw JSON response")
+    var json = false
+    
+    @Flag(help: "Disable structured output format (for APIs that don't support it)")
+    var noStructured = false
+    
+    func run() async throws {
+        let client = try createClient()
+        
+        switch testType {
+        case "simple":
+            try await testSimpleSchema(client: client)
+        case "complex":
+            try await testComplexSchema(client: client)
+        case "json-object":
+            try await testJsonObject(client: client)
+        case "all":
+            try await testJsonObject(client: client)
+            print("\n" + String(repeating: "-", count: 50) + "\n")
+            try await testSimpleSchema(client: client)
+            print("\n" + String(repeating: "-", count: 50) + "\n")
+            try await testComplexSchema(client: client)
+        default:
+            throw ValidationError("Invalid test type. Use 'simple', 'complex', 'json-object', or 'all'")
+        }
+    }
+    
+    private func testJsonObject(client: xAIClient) async throws {
+        print("Testing JSON Object Response Format")
+        print("===================================\n")
+        
+        let responseFormat = ResponseFormat(
+            type: .jsonObject,
+            jsonSchema: nil
+        )
+        
+        let messages = [
+            ChatMessage(role: .system, content: "You are a helpful assistant that responds with JSON data."),
+            ChatMessage(role: .user, content: "Generate a JSON object with name, age, and email for John Doe, 30 years old, john.doe@example.com")
+        ]
+        
+        let request: ChatCompletionRequest
+        if noStructured {
+            request = ChatCompletionRequest(
+                messages: messages,
+                model: model
+            )
+        } else {
+            request = ChatCompletionRequest(
+                messages: messages,
+                model: model,
+                responseFormat: responseFormat
+            )
+        }
+        
+        print("Request Details:")
+        print("- Model: \(model)")
+        print("- Response Format Type: \(noStructured ? "none" : responseFormat.type.rawValue)")
+        print("\nSending request...")
+        
+        let response = try await client.chat.completions(request)
+        
+        if json {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(response)
+            print("\nRaw Response:")
+            print(String(data: data, encoding: .utf8)!)
+        } else {
+            print("\nResponse:")
+            if let content = response.choices.first?.message.content {
+                print("Content: \(content)")
+                
+                if let data = content.data(using: .utf8),
+                   let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    print("\nParsed JSON:")
+                    for (key, value) in parsed {
+                        print("- \(key): \(value)")
+                    }
+                }
+            }
+        }
+    }
+    
+    private func testSimpleSchema(client: xAIClient) async throws {
+        print("Testing Simple Structured Output")
+        print("================================\n")
+        
+        let schema: [String: Any] = [
+            "type": "object",
+            "properties": [
+                "name": ["type": "string"],
+                "age": ["type": "integer"],
+                "email": ["type": "string"]
+            ],
+            "required": ["name", "age", "email"]
+        ]
+        
+        let jsonSchema = JSONSchema(
+            name: "person_info",
+            strict: true,
+            schema: schema
+        )
+        
+        let responseFormat = ResponseFormat(
+            type: .jsonSchema,
+            jsonSchema: jsonSchema
+        )
+        
+        // Test if xAI supports structured outputs
+        print("Testing with responseFormat: \(noStructured ? "none" : responseFormat.type.rawValue)")
+        
+        let messages = [
+            ChatMessage(role: .system, content: "You are a helpful assistant that responds with structured JSON data."),
+            ChatMessage(role: .user, content: "Generate a JSON object with the following structure: {\"name\": string, \"age\": integer, \"email\": string}. Use the values: John Doe, 30 years old, john.doe@example.com")
+        ]
+        
+        let request: ChatCompletionRequest
+        if noStructured {
+            // Without structured output format
+            request = ChatCompletionRequest(
+                messages: messages,
+                model: model
+            )
+        } else {
+            // With structured output format
+            request = ChatCompletionRequest(
+                messages: messages,
+                model: model,
+                responseFormat: responseFormat
+            )
+        }
+        
+        print("Request Details:")
+        print("- Model: \(model)")
+        print("- Schema Name: \(jsonSchema.name)")
+        print("- Schema: \(schema)")
+        print("\nSending request...")
+        
+        let response = try await client.chat.completions(request)
+        
+        if json {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(response)
+            print("\nRaw Response:")
+            print(String(data: data, encoding: .utf8)!)
+        } else {
+            print("\nResponse:")
+            if let content = response.choices.first?.message.content {
+                print("Content: \(content)")
+                
+                if let data = content.data(using: .utf8),
+                   let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    print("\nParsed JSON:")
+                    print("- Name: \(parsed["name"] ?? "N/A")")
+                    print("- Age: \(parsed["age"] ?? "N/A")")
+                    print("- Email: \(parsed["email"] ?? "N/A")")
+                }
+            }
+        }
+    }
+    
+    private func testComplexSchema(client: xAIClient) async throws {
+        print("Testing Complex Structured Output")
+        print("=================================\n")
+        
+        let schema: [String: Any] = [
+            "type": "object",
+            "properties": [
+                "product": [
+                    "type": "object",
+                    "properties": [
+                        "name": ["type": "string"],
+                        "price": ["type": "number"],
+                        "inStock": ["type": "boolean"],
+                        "categories": [
+                            "type": "array",
+                            "items": ["type": "string"]
+                        ]
+                    ],
+                    "required": ["name", "price", "inStock", "categories"]
+                ],
+                "reviews": [
+                    "type": "array",
+                    "items": [
+                        "type": "object",
+                        "properties": [
+                            "reviewer": ["type": "string"],
+                            "rating": [
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5
+                            ],
+                            "comment": ["type": "string"]
+                        ],
+                        "required": ["reviewer", "rating", "comment"]
+                    ]
+                ]
+            ],
+            "required": ["product", "reviews"]
+        ]
+        
+        let jsonSchema = JSONSchema(
+            name: "product_review",
+            strict: true,
+            schema: schema
+        )
+        
+        let responseFormat = ResponseFormat(
+            type: .jsonSchema,
+            jsonSchema: jsonSchema
+        )
+        
+        let messages = [
+            ChatMessage(role: .system, content: "You are a helpful assistant that responds with structured JSON data."),
+            ChatMessage(role: .user, content: "Generate a product review JSON with nested structure: {\"product\": {\"name\": string, \"price\": number, \"inStock\": boolean, \"categories\": [string]}, \"reviews\": [{\"reviewer\": string, \"rating\": 1-5, \"comment\": string}]}. Make it about a laptop with 2 reviews.")
+        ]
+        
+        let request: ChatCompletionRequest
+        if noStructured {
+            request = ChatCompletionRequest(
+                messages: messages,
+                model: model
+            )
+        } else {
+            request = ChatCompletionRequest(
+                messages: messages,
+                model: model,
+                responseFormat: responseFormat
+            )
+        }
+        
+        print("Request Details:")
+        print("- Model: \(model)")
+        print("- Schema Name: \(jsonSchema.name)")
+        print("- Complex nested schema with product and reviews")
+        print("\nSending request...")
+        
+        let response = try await client.chat.completions(request)
+        
+        if json {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(response)
+            print("\nRaw Response:")
+            print(String(data: data, encoding: .utf8)!)
+        } else {
+            print("\nResponse:")
+            if let content = response.choices.first?.message.content {
+                if let data = content.data(using: .utf8),
+                   let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    print("\nParsed Product Info:")
+                    if let product = parsed["product"] as? [String: Any] {
+                        print("- Name: \(product["name"] ?? "N/A")")
+                        print("- Price: $\(product["price"] ?? "N/A")")
+                        print("- In Stock: \(product["inStock"] ?? "N/A")")
+                        if let categories = product["categories"] as? [String] {
+                            print("- Categories: \(categories.joined(separator: ", "))")
+                        }
+                    }
+                    
+                    if let reviews = parsed["reviews"] as? [[String: Any]] {
+                        print("\nReviews:")
+                        for (index, review) in reviews.enumerated() {
+                            print("\nReview \(index + 1):")
+                            print("- Reviewer: \(review["reviewer"] ?? "N/A")")
+                            print("- Rating: \(review["rating"] ?? "N/A")/5")
+                            print("- Comment: \(review["comment"] ?? "N/A")")
+                        }
+                    }
+                } else {
+                    print("Raw content: \(content)")
+                }
+            }
         }
     }
 }
