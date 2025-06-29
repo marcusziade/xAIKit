@@ -82,6 +82,72 @@ public struct SSEParser {
         return events
     }
     
+    /// Parse streaming data buffer incrementally
+    /// - Parameter buffer: Buffer containing accumulated data
+    /// - Returns: Parsed event or nil if incomplete
+    public static func parseBuffer(_ buffer: inout Data) -> Event? {
+        var currentEvent: (id: String?, event: String?, data: [String], retry: Int?) = (nil, nil, [], nil)
+        var foundCompleteEvent = false
+        
+        // Process lines in buffer
+        while let newlineRange = buffer.range(of: Data([0x0A])) {
+            let lineData = buffer[..<newlineRange.lowerBound]
+            buffer.removeSubrange(..<newlineRange.upperBound)
+            
+            guard let line = String(data: lineData, encoding: .utf8) else {
+                continue
+            }
+            
+            if line.isEmpty {
+                // End of event
+                if !currentEvent.data.isEmpty {
+                    foundCompleteEvent = true
+                    break
+                }
+                continue
+            }
+            
+            if line.hasPrefix(":") {
+                // Comment, ignore
+                continue
+            }
+            
+            if let colonIndex = line.firstIndex(of: ":") {
+                let field = String(line[..<colonIndex])
+                var value = String(line[line.index(after: colonIndex)...])
+                
+                // Remove leading space if present
+                if value.hasPrefix(" ") {
+                    value = String(value.dropFirst())
+                }
+                
+                switch field {
+                case "id":
+                    currentEvent.id = value
+                case "event":
+                    currentEvent.event = value
+                case "data":
+                    currentEvent.data.append(value)
+                case "retry":
+                    currentEvent.retry = Int(value)
+                default:
+                    break
+                }
+            }
+        }
+        
+        if foundCompleteEvent && !currentEvent.data.isEmpty {
+            return Event(
+                id: currentEvent.id,
+                event: currentEvent.event,
+                data: currentEvent.data.joined(separator: "\n"),
+                retry: currentEvent.retry
+            )
+        }
+        
+        return nil
+    }
+    
     /// Parse streaming chat completion chunks
     /// - Parameter event: SSE event
     /// - Returns: Decoded chunk or nil if parsing fails

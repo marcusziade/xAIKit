@@ -64,16 +64,38 @@ public final class MessagesAPI {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
+                    var buffer = Data()
+                    
                     for try await event in eventStream {
                         switch event {
                         case .data(let data):
-                            let events = SSEParser.parse(data)
-                            for event in events {
-                                if let messageEvent = SSEParser.parseMessageChunk(event) {
-                                    continuation.yield(messageEvent)
+                            // Accumulate data in buffer
+                            buffer.append(data)
+                            
+                            // Check for complete events (double newline)
+                            while let doubleNewlineRange = buffer.range(of: Data("\n\n".utf8)) {
+                                // Extract the complete event
+                                let eventData = buffer[..<doubleNewlineRange.upperBound]
+                                buffer.removeSubrange(..<doubleNewlineRange.upperBound)
+                                
+                                // Parse the complete event
+                                let events = SSEParser.parse(eventData)
+                                for event in events {
+                                    if let messageEvent = SSEParser.parseMessageChunk(event) {
+                                        continuation.yield(messageEvent)
+                                    }
                                 }
                             }
                         case .done:
+                            // Process any remaining data in buffer
+                            if !buffer.isEmpty {
+                                let events = SSEParser.parse(buffer)
+                                for event in events {
+                                    if let messageEvent = SSEParser.parseMessageChunk(event) {
+                                        continuation.yield(messageEvent)
+                                    }
+                                }
+                            }
                             continuation.finish()
                         }
                     }
