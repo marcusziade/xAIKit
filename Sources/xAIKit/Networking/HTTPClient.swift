@@ -42,7 +42,7 @@ public enum HTTPMethod: String {
 }
 
 /// Events received during streaming
-public enum StreamEvent {
+public enum StreamEvent: Sendable {
     case data(Data)
     case done
 }
@@ -67,7 +67,7 @@ public func createHTTPClient(configuration: xAIConfiguration) -> HTTPClientProto
 
 /// URLSession-based HTTP client for Apple platforms
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
-public final class URLSessionHTTPClient: HTTPClientProtocol {
+public final class URLSessionHTTPClient: HTTPClientProtocol, @unchecked Sendable {
     private let configuration: xAIConfiguration
     private let session: URLSession
     
@@ -152,10 +152,13 @@ public final class URLSessionHTTPClient: HTTPClientProtocol {
             urlRequest.setValue(value, forHTTPHeaderField: key)
         }
         
+        // Create immutable copy for the closure
+        let finalRequest = urlRequest
+        
         return AsyncThrowingStream { continuation in
             Task {
                 do {
-                    let (bytes, response) = try await session.bytes(for: urlRequest)
+                    let (bytes, response) = try await session.bytes(for: finalRequest)
                     
                     guard let httpResponse = response as? HTTPURLResponse else {
                         continuation.finish(throwing: xAIError.invalidResponse)
@@ -236,7 +239,7 @@ public final class URLSessionHTTPClient: HTTPClientProtocol {
 
 /// CURL-based HTTP client for Linux
 #if os(Linux)
-public final class CURLHTTPClient: HTTPClientProtocol {
+public final class CURLHTTPClient: HTTPClientProtocol, @unchecked Sendable {
     private let configuration: xAIConfiguration
     
     public init(configuration: xAIConfiguration) {
