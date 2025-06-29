@@ -1,0 +1,95 @@
+@Tutorial(time: 20) {
+    @XcodeRequirement(title: "Xcode 16.0 or later", destination: "https://developer.apple.com/xcode/")
+    
+    @Intro(title: "Working with Structured Outputs") {
+        Learn how to use structured outputs to get consistent, type-safe JSON responses from xAI models. Build a SwiftUI app that extracts structured data from unstructured text.
+        
+        @Image(source: "smart-assistant", alt: "An AI assistant providing structured responses")
+    }
+    
+    @Section(title: "Understanding Structured Outputs") {
+        @ContentAndMedia {
+            Structured outputs ensure that AI responses follow a specific format, making them easier to parse and use in your applications. xAI supports the `json_object` response format, which guarantees JSON output.
+            
+            In this tutorial, you'll build a recipe parser app that extracts structured recipe data from plain text descriptions.
+            
+            @Image(source: "smart-assistant", alt: "Structured data extraction concept")
+        }
+        
+        @Steps {
+            @Step {
+                Create a new SwiftUI app project and add xAIKit as a dependency.
+                
+                @Code(name: "Package.swift", file: "structured-01-setup.swift")
+            }
+            
+            @Step {
+                Define your data models that represent the structured output you want to receive.
+                
+                @Code(name: "Models.swift", file: "structured-02-models.swift")
+            }
+            
+            @Step {
+                Create a view model that uses xAIKit to extract structured data from text.
+                
+                @Code(name: "RecipeParserViewModel.swift", file: "structured-03-viewmodel.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Building the UI") {
+        @ContentAndMedia {
+            Now let's create a SwiftUI interface that allows users to input recipe text and see the extracted structured data.
+            
+            @Image(source: "smart-assistant", alt: "Recipe parser UI")
+        }
+        
+        @Steps {
+            @Step {
+                Create the main content view with a text editor for recipe input.
+                
+                @Code(name: "ContentView.swift", file: "structured-04-contentview.swift")
+            }
+            
+            @Step {
+                Add a view to display the parsed recipe data in a structured format.
+                
+                @Code(name: "RecipeDetailView.swift", file: "structured-05-detailview.swift")
+            }
+            
+            @Step {
+                Connect everything in your app's entry point.
+                
+                @Code(name: "RecipeParserApp.swift", file: "structured-06-app.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Advanced Structured Outputs") {
+        @ContentAndMedia {
+            Let's explore more advanced use cases for structured outputs, including nested objects and arrays.
+            
+            @Image(source: "smart-assistant", alt: "Advanced structured data")
+        }
+        
+        @Steps {
+            @Step {
+                Update the model to handle more complex recipe data with nutritional information.
+                
+                @Code(name: "AdvancedModels.swift", file: "structured-07-advanced-models.swift")
+            }
+            
+            @Step {
+                Enhance the view model to request more detailed structured data.
+                
+                @Code(name: "AdvancedViewModel.swift", file: "structured-08-advanced-viewmodel.swift")
+            }
+            
+            @Step {
+                Create a comprehensive view to display all the structured data.
+                
+                @Code(name: "AdvancedRecipeView.swift", file: "structured-09-advanced-view.swift")
+            }
+        }
+    }
+}

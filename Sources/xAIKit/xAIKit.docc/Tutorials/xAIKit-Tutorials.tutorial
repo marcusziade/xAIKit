@@ -14,4 +14,10 @@
         
         @TutorialReference(tutorial: "doc:ImageGenerationAndAnalysis")
     }
+    
+    @Chapter(name: "Working with Structured Outputs") {
+        Learn how to extract structured, type-safe data from AI responses. Build apps that parse unstructured text into well-defined JSON formats.
+        
+        @TutorialReference(tutorial: "doc:StructuredOutputs")
+    }
 }
