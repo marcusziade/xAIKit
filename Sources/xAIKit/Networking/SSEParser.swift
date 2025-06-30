@@ -1,8 +1,31 @@
 import Foundation
 
-/// Parser for Server-Sent Events (SSE) format
+/// Parser for Server-Sent Events (SSE) format.
+///
+/// Handles parsing of streaming responses from the xAI API, which uses the
+/// SSE format for real-time data delivery. SSE is a standard for server-to-client
+/// streaming of text-based event data.
+///
+/// ## SSE Format
+/// ```
+/// event: message
+/// data: {"content": "Hello"}
+/// 
+/// event: done
+/// data: [DONE]
+/// ```
+///
+/// ## Usage
+/// The parser is used internally by the HTTP client to process streaming responses,
+/// converting raw SSE data into structured events that can be processed by the SDK.
 public struct SSEParser {
-    /// Represents a single SSE event
+    /// Represents a single Server-Sent Event.
+    ///
+    /// Contains all fields that can be present in an SSE message:
+    /// - `id`: Optional event identifier
+    /// - `event`: Event type (e.g., "message", "error", "done")
+    /// - `data`: The actual event data, typically JSON
+    /// - `retry`: Reconnection time in milliseconds
     public struct Event {
         public let id: String?
         public let event: String?
@@ -10,9 +33,19 @@ public struct SSEParser {
         public let retry: Int?
     }
     
-    /// Parse SSE data into events
-    /// - Parameter data: Raw SSE data
+    /// Parse SSE data into events.
+    ///
+    /// Processes a complete chunk of SSE-formatted data and extracts all events
+    /// contained within. Handles multi-line data fields and proper event boundaries.
+    ///
+    /// - Parameter data: Raw SSE data from the server
     /// - Returns: Array of parsed events
+    ///
+    /// ## Example
+    /// ```swift
+    /// let sseData = "event: message\ndata: {\"text\": \"Hello\"}\n\n".data(using: .utf8)!
+    /// let events = SSEParser.parse(sseData)
+    /// ```
     public static func parse(_ data: Data) -> [Event] {
         guard let string = String(data: data, encoding: .utf8) else {
             return []
@@ -82,9 +115,16 @@ public struct SSEParser {
         return events
     }
     
-    /// Parse streaming data buffer incrementally
-    /// - Parameter buffer: Buffer containing accumulated data
-    /// - Returns: Parsed event or nil if incomplete
+    /// Parse streaming data buffer incrementally.
+    ///
+    /// Designed for processing streaming data as it arrives. Maintains state in the
+    /// buffer and extracts complete events while preserving incomplete data for the
+    /// next iteration.
+    ///
+    /// - Parameter buffer: Mutable buffer containing accumulated streaming data
+    /// - Returns: A complete parsed event, or `nil` if no complete event is available
+    ///
+    /// - Note: This method modifies the buffer, removing processed data
     public static func parseBuffer(_ buffer: inout Data) -> Event? {
         var currentEvent: (id: String?, event: String?, data: [String], retry: Int?) = (nil, nil, [], nil)
         var foundCompleteEvent = false

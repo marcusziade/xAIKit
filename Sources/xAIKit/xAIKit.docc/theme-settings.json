@@ -64,6 +64,10 @@
           "experiment": {
             "background": "#F3E5F5",
             "border": "#7C4DFF"
+          },
+          "warning": {
+            "background": "#FFEBEE",
+            "border": "#FF3737"
           }
         },
         "changeHighlight": {
@@ -118,6 +122,10 @@
           "experiment": {
             "background": "#4A148C",
             "border": "#7C4DFF"
+          },
+          "warning": {
+            "background": "#B71C1C",
+            "border": "#FF3737"
           }
         }
       },

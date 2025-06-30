@@ -2,36 +2,90 @@ import Foundation
 
 // MARK: - Chat Completion Request
 
-/// Request for creating a chat completion
+/// Request for creating a chat completion with xAI models.
+///
+/// `ChatCompletionRequest` encapsulates all parameters needed to generate AI responses
+/// through the chat completions API. It supports standard text generation, streaming,
+/// function calling, structured outputs, and more.
+///
+/// ## Basic Usage
+/// ```swift
+/// let request = ChatCompletionRequest(
+///     messages: [
+///         ChatMessage(role: .system, content: "You are a helpful assistant."),
+///         ChatMessage(role: .user, content: "What is machine learning?")
+///     ],
+///     model: "grok-beta"
+/// )
+/// ```
+///
+/// ## Advanced Features
+/// ```swift
+/// let advancedRequest = ChatCompletionRequest(
+///     messages: messages,
+///     model: "grok-beta",
+///     temperature: 0.7,
+///     maxTokens: 1000,
+///     responseFormat: .jsonObject,
+///     tools: tools,
+///     toolChoice: .auto
+/// )
+/// ```
 public struct ChatCompletionRequest: Codable {
-    /// A list of messages comprising the conversation so far
+    /// A list of messages comprising the conversation so far.
+    ///
+    /// Messages should be ordered chronologically, with the system message (if any)
+    /// first, followed by alternating user and assistant messages.
     public let messages: [ChatMessage]
     
-    /// ID of the model to use
+    /// ID of the model to use.
+    ///
+    /// Available models include:
+    /// - `"grok-beta"`: Latest Grok model with advanced capabilities
+    /// - `"grok-2"`: Previous generation Grok model
+    /// - Custom model identifiers as provided by xAI
     public let model: String
     
-    /// Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency
+    /// Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
+    ///
+    /// - Positive values (0.0 to 2.0): Reduce repetition by penalizing tokens that appear frequently
+    /// - Negative values (-2.0 to 0.0): Increase repetition
+    /// - Default: 0.0 (no penalty)
     public let frequencyPenalty: Double?
     
     /// Modify the likelihood of specified tokens appearing in the completion
     public let logitBias: [String: Double]?
     
-    /// Whether to return log probabilities of the output tokens or not
+    /// Whether to return log probabilities of the output tokens or not.
+    ///
+    /// When `true`, includes token-level probability information in the response,
+    /// useful for understanding model confidence and debugging.
     public let logprobs: Bool?
     
     /// Number of most likely tokens to return at each token position
     public let topLogprobs: Int?
     
-    /// The maximum number of tokens that can be generated
+    /// The maximum number of tokens that can be generated in the completion.
+    ///
+    /// The token count includes both the prompt and the completion. Different models
+    /// have different maximum limits. If not specified, the model's default is used.
     public let maxTokens: Int?
     
-    /// How many chat completion choices to generate
+    /// How many chat completion choices to generate for each input message.
+    ///
+    /// Defaults to 1. Note that you will be charged based on the total number of
+    /// tokens generated across all choices.
     public let n: Int?
     
     /// Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear
     public let presencePenalty: Double?
     
-    /// How much reasoning effort to apply when generating a response
+    /// How much reasoning effort to apply when generating a response.
+    ///
+    /// Controls the computational effort spent on reasoning:
+    /// - `.low`: Faster responses with basic reasoning
+    /// - `.medium`: Balanced speed and reasoning depth
+    /// - `.high`: Slower but more thoughtful responses
     public let reasoningEffort: ReasoningEffort?
     
     /// Response format configuration
@@ -43,28 +97,55 @@ public struct ChatCompletionRequest: Codable {
     /// Up to 4 sequences where the API will stop generating
     public let stop: StopSequence?
     
-    /// If set, partial message deltas will be sent
+    /// If set, partial message deltas will be sent as server-sent events.
+    ///
+    /// When `true`, responses are streamed token-by-token as they're generated,
+    /// enabling real-time display of AI responses. Use the streaming API methods
+    /// to handle streamed responses.
     public let stream: Bool?
     
-    /// What sampling temperature to use, between 0 and 2
+    /// What sampling temperature to use, between 0 and 2.
+    ///
+    /// Higher values (e.g., 1.0) make output more random and creative.
+    /// Lower values (e.g., 0.2) make output more focused and deterministic.
+    /// - 0.0-0.3: Very focused, almost deterministic
+    /// - 0.4-0.7: Balanced creativity and coherence
+    /// - 0.8-1.2: More creative and varied
+    /// - 1.3-2.0: Very creative, may be less coherent
     public let temperature: Double?
     
-    /// An alternative to sampling with temperature
+    /// An alternative to sampling with temperature, called nucleus sampling.
+    ///
+    /// The model considers tokens with top_p cumulative probability mass.
+    /// So 0.1 means only tokens comprising the top 10% probability mass are considered.
+    /// Generally, use either temperature or top_p, not both.
     public let topP: Double?
     
     /// A list of tools the model may call
     public let tools: [ChatTool]?
     
-    /// Controls which function is called by the model
+    /// Controls which function is called by the model.
+    ///
+    /// Options include:
+    /// - `.none`: Model will not call functions
+    /// - `.auto`: Model decides whether to call functions
+    /// - `.required`: Model must call a function
+    /// - `.function(name)`: Model must call the specified function
     public let toolChoice: ToolChoice?
     
-    /// Whether to enable parallel function calling
+    /// Whether to enable parallel function calling during a single completion.
+    ///
+    /// When `true`, the model may generate multiple function calls in a single response,
+    /// improving efficiency for tasks requiring multiple tool uses.
     public let parallelToolCalls: Bool?
     
     /// A unique identifier representing your end-user
     public let user: String?
     
-    /// If set, returns a deferred request ID instead of blocking
+    /// If set, returns a deferred request ID instead of blocking for the response.
+    ///
+    /// Useful for long-running requests. The response can be retrieved later using
+    /// the deferred completion endpoint with the returned request ID.
     public let deferred: Bool?
     
     enum CodingKeys: String, CodingKey {
@@ -133,12 +214,41 @@ public struct ChatCompletionRequest: Codable {
     }
 }
 
-/// Chat message
+/// A message in a chat conversation.
+///
+/// Messages represent the building blocks of conversations with AI models. Each message
+/// has a role (system, user, assistant, or tool) and content that can be text, images,
+/// or structured data.
+///
+/// ## Creating Messages
+/// ```swift
+/// // Simple text message
+/// let userMessage = ChatMessage(role: .user, content: "Hello!")
+///
+/// // Multi-modal message with text and image
+/// let multiModalMessage = ChatMessage(
+///     role: .user,
+///     content: [
+///         .text("What's in this image?"),
+///         .imageURL("https://example.com/image.jpg")
+///     ]
+/// )
+/// ```
 public struct ChatMessage: Codable {
-    /// The role of the message author
+    /// The role of the message author.
+    ///
+    /// - `.system`: Instructions that guide the model's behavior
+    /// - `.user`: Input from the human user
+    /// - `.assistant`: Responses from the AI model
+    /// - `.tool`: Results from function/tool calls
     public let role: ChatRole
     
-    /// The content of the message - can be a string or array of content parts
+    /// The content of the message.
+    ///
+    /// Can be:
+    /// - Simple text: `ChatMessage(role: .user, content: "Hello")`
+    /// - Multi-modal: Array of content parts including text and images
+    /// - Tool results: Structured responses from function calls
     public let content: ChatMessageContent
     
     public init(role: ChatRole, content: String) {
@@ -151,7 +261,10 @@ public struct ChatMessage: Codable {
         self.content = .parts(content)
     }
     
-    /// Convenience getter for string content
+    /// Convenience getter for extracting string content from the message.
+    ///
+    /// Returns the text content whether the message contains simple text or
+    /// multi-part content. For multi-part messages, concatenates all text parts.
     public var stringContent: String? {
         switch content {
         case .text(let str):
@@ -167,7 +280,13 @@ public struct ChatMessage: Codable {
     }
 }
 
-/// Message content that can be either a string or array of content parts
+/// Message content that can be either a string or array of content parts.
+///
+/// This enum provides flexibility in message content representation:
+/// - Simple text messages use `.text(String)`
+/// - Multi-modal messages (text + images) use `.parts([Content])`
+///
+/// The type automatically handles encoding/decoding based on the content structure.
 public enum ChatMessageContent: Codable {
     case text(String)
     case parts([ChatMessage.Content])
@@ -195,7 +314,19 @@ public enum ChatMessageContent: Codable {
 }
 
 extension ChatMessage {
-    /// Content part that can be text or image
+    /// Content part that can be text or image.
+    ///
+    /// Used for multi-modal messages that combine text and images. Each part
+    /// represents either a text segment or an image URL.
+    ///
+    /// ## Example
+    /// ```swift
+    /// let parts: [ChatMessage.Content] = [
+    ///     .text("What do you see in this image?"),
+    ///     .image(url: "https://example.com/photo.jpg"),
+    ///     .text("Is it a sunset?")
+    /// ]
+    /// ```
     public enum Content: Codable {
         case text(String)
         case image(url: String)
@@ -243,21 +374,51 @@ extension ChatMessage {
     }
 }
 
-/// Role of a chat message
+/// Role of a chat message.
+///
+/// Defines the sender's role in the conversation, which affects how the AI
+/// interprets and responds to the message.
 public enum ChatRole: String, Codable {
     case system
     case user
     case assistant
 }
 
-/// Reasoning effort levels
+/// Reasoning effort levels for AI responses.
+///
+/// Controls the computational resources and time spent on generating responses:
+/// - `.low`: Quick responses with basic reasoning, suitable for simple queries
+/// - `.medium`: Balanced approach for most use cases
+/// - `.high`: Deep reasoning for complex problems, may take longer
 public enum ReasoningEffort: String, Codable {
     case low
     case medium
     case high
 }
 
-/// Response format configuration
+/// Response format configuration for structured outputs.
+///
+/// Allows you to specify how the AI should format its response, including
+/// support for JSON objects and schema-validated JSON.
+///
+/// ## Example
+/// ```swift
+/// // Force JSON object response
+/// let format = ResponseFormat(type: .jsonObject)
+///
+/// // Use JSON schema validation
+/// let schema: [String: Any] = [
+///     "type": "object",
+///     "properties": [
+///         "name": ["type": "string"],
+///         "age": ["type": "integer"]
+///     ]
+/// ]
+/// let schemaFormat = ResponseFormat(
+///     type: .jsonSchema,
+///     jsonSchema: JSONSchema(name: "person", schema: schema)
+/// )
+/// ```
 public struct ResponseFormat: Codable {
     /// The type of response format
     public let type: ResponseFormatType
@@ -276,14 +437,38 @@ public struct ResponseFormat: Codable {
     }
 }
 
-/// Response format types
+/// Response format types supported by the API.
+///
+/// - `.text`: Standard text response (default)
+/// - `.jsonObject`: Response will be a valid JSON object
+/// - `.jsonSchema`: Response will conform to a provided JSON schema
 public enum ResponseFormatType: String, Codable {
     case text
     case jsonObject = "json_object"
     case jsonSchema = "json_schema"
 }
 
-/// JSON schema configuration
+/// JSON schema configuration for structured output validation.
+///
+/// Defines a JSON schema that the model's response must conform to. This ensures
+/// predictable, structured outputs that can be reliably parsed by your application.
+///
+/// ## Usage
+/// ```swift
+/// let schema = JSONSchema(
+///     name: "weather_response",
+///     strict: true,
+///     schema: [
+///         "type": "object",
+///         "properties": [
+///             "temperature": ["type": "number"],
+///             "conditions": ["type": "string"],
+///             "humidity": ["type": "integer"]
+///         ],
+///         "required": ["temperature", "conditions"]
+///     ]
+/// )
+/// ```
 public struct JSONSchema: Codable {
     /// Name of the JSON schema
     public let name: String
@@ -330,7 +515,20 @@ public struct JSONSchema: Codable {
     }
 }
 
-/// Stop sequence configuration
+/// Stop sequence configuration for controlling response termination.
+///
+/// Specifies one or more sequences that, when generated, will cause the model
+/// to stop generating further tokens. Useful for controlling response length
+/// or format.
+///
+/// ## Examples
+/// ```swift
+/// // Single stop sequence
+/// let stop = StopSequence.single("\n\n")
+///
+/// // Multiple stop sequences
+/// let stops = StopSequence.multiple(["END", "STOP", "\n---\n"])
+/// ```
 public enum StopSequence: Codable {
     case single(String)
     case multiple([String])
@@ -363,12 +561,39 @@ public enum StopSequence: Codable {
     }
 }
 
-/// Chat tool definition
+/// Chat tool definition for function calling.
+///
+/// Defines a tool or function that the AI model can choose to call during
+/// conversation. This enables the AI to interact with external systems or
+/// perform specific actions.
+///
+/// ## Example
+/// ```swift
+/// let weatherTool = ChatTool(
+///     type: "function",
+///     function: ChatFunction(
+///         name: "get_weather",
+///         description: "Get current weather for a location",
+///         parameters: [
+///             "type": "object",
+///             "properties": [
+///                 "location": [
+///                     "type": "string",
+///                     "description": "City name"
+///                 ]
+///             ],
+///             "required": ["location"]
+///         ]
+///     )
+/// )
+/// ```
 public struct ChatTool: Codable {
-    /// The type of the tool
+    /// The type of the tool.
+    ///
+    /// Currently only "function" is supported.
     public let type: String
     
-    /// Function definition
+    /// Function definition containing the details of what the function does and its parameters.
     public let function: ChatFunction
     
     public init(type: String = "function", function: ChatFunction) {
@@ -377,15 +602,47 @@ public struct ChatTool: Codable {
     }
 }
 
-/// Chat function definition
+/// Chat function definition for AI-callable functions.
+///
+/// Describes a function that the AI model can choose to invoke, including its
+/// name, purpose, and expected parameters. The AI will generate appropriate
+/// arguments based on the conversation context.
+///
+/// ## Parameter Schema
+/// Parameters should follow JSON Schema format:
+/// ```swift
+/// let parameters: [String: Any] = [
+///     "type": "object",
+///     "properties": [
+///         "location": [
+///             "type": "string",
+///             "description": "The city and state"
+///         ],
+///         "unit": [
+///             "type": "string",
+///             "enum": ["celsius", "fahrenheit"],
+///             "description": "Temperature unit"
+///         ]
+///     ],
+///     "required": ["location"]
+/// ]
+/// ```
 public struct ChatFunction: Codable {
-    /// The name of the function
+    /// The name of the function to be called.
+    ///
+    /// Should be a clear, descriptive identifier like "get_weather" or "search_database".
     public let name: String
     
-    /// Description of what the function does
+    /// Description of what the function does.
+    ///
+    /// This helps the AI understand when and how to use the function. Be specific
+    /// about the function's purpose and capabilities.
     public let description: String?
     
-    /// Parameters the function accepts
+    /// Parameters the function accepts, defined as a JSON Schema.
+    ///
+    /// Describes the expected arguments including types, descriptions, and which
+    /// parameters are required. The AI uses this schema to generate valid function calls.
     public let parameters: [String: Any]?
     
     public init(name: String, description: String? = nil, parameters: [String: Any]? = nil) {
@@ -423,7 +680,25 @@ public struct ChatFunction: Codable {
     }
 }
 
-/// Tool choice configuration
+/// Tool choice configuration for controlling function calling behavior.
+///
+/// Determines how the AI model should handle function calling:
+/// - `.none`: Disable function calling entirely
+/// - `.auto`: Let the model decide whether to call functions
+/// - `.required`: Force the model to call at least one function
+/// - `.function(name)`: Force the model to call a specific function
+///
+/// ## Examples
+/// ```swift
+/// // Let AI decide
+/// request.toolChoice = .auto
+///
+/// // Force weather function
+/// request.toolChoice = .function(name: "get_weather")
+///
+/// // Require some function call
+/// request.toolChoice = .required
+/// ```
 public enum ToolChoice: Codable {
     case none
     case auto
@@ -484,7 +759,33 @@ public enum ToolChoice: Codable {
 
 // MARK: - Chat Completion Response
 
-/// Response from chat completion endpoint
+/// Response from the chat completion endpoint.
+///
+/// Contains the AI-generated response along with metadata about the generation
+/// process, including token usage, finish reasons, and any tool calls made.
+///
+/// ## Accessing the Response
+/// ```swift
+/// let response = try await client.chat.completions(request)
+/// 
+/// // Get the generated text
+/// if let content = response.choices.first?.message.content {
+///     print(content)
+/// }
+/// 
+/// // Check token usage
+/// if let usage = response.usage {
+///     print("Tokens used: \(usage.totalTokens)")
+/// }
+/// 
+/// // Handle tool calls
+/// if let toolCalls = response.choices.first?.message.toolCalls {
+///     for call in toolCalls {
+///         print("Function: \(call.function.name)")
+///         print("Arguments: \(call.function.arguments)")
+///     }
+/// }
+/// ```
 public struct ChatCompletionResponse: Codable {
     /// Unique ID for the chat response
     public let id: String
@@ -534,12 +835,17 @@ public struct ChatChoice: Codable {
     }
 }
 
-/// Chat response message
+/// Message generated by the AI in response to the conversation.
+///
+/// Contains the generated content and any additional information like tool calls,
+/// reasoning content (when reasoning_effort is used), or refusal messages.
 public struct ChatResponseMessage: Codable {
-    /// The role of the message author
+    /// The role of the message author (always `.assistant` for responses).
     public let role: ChatRole
     
-    /// The content of the message
+    /// The main text content of the response.
+    ///
+    /// May be `nil` if the response consists only of tool calls.
     public let content: String?
     
     /// Reasoning content when reasoning_effort is used

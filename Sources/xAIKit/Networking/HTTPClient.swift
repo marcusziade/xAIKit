@@ -3,13 +3,34 @@ import Foundation
 import FoundationNetworking
 #endif
 
-/// Protocol for HTTP client implementations
+/// Protocol for HTTP client implementations.
+///
+/// Defines the interface for making HTTP requests to the xAI API. Different
+/// implementations exist for different platforms (URLSession for Apple platforms,
+/// CURL for Linux).
+///
+/// This protocol supports both standard request-response operations and
+/// streaming responses via Server-Sent Events (SSE).
 public protocol HTTPClientProtocol {
     func sendRequest<T: Decodable>(_ request: HTTPRequest) async throws -> T
     func sendStreamingRequest(_ request: HTTPRequest) async throws -> AsyncThrowingStream<StreamEvent, Error>
 }
 
-/// HTTP request configuration
+/// HTTP request configuration.
+///
+/// Encapsulates all the information needed to make an HTTP request, including
+/// the method, URL, headers, body, and timeout settings.
+///
+/// ## Example
+/// ```swift
+/// let request = HTTPRequest(
+///     method: .post,
+///     url: URL(string: "https://api.x.ai/v1/chat/completions")!,
+///     headers: ["X-Custom": "value"],
+///     body: requestData,
+///     timeoutInterval: 30
+/// )
+/// ```
 public struct HTTPRequest {
     public let method: HTTPMethod
     public let url: URL
@@ -32,7 +53,14 @@ public struct HTTPRequest {
     }
 }
 
-/// HTTP methods
+/// HTTP methods supported by the API.
+///
+/// Standard REST methods used for different API operations:
+/// - `.get`: Retrieve resources
+/// - `.post`: Create resources or trigger operations
+/// - `.put`: Update entire resources
+/// - `.patch`: Partially update resources
+/// - `.delete`: Remove resources
 public enum HTTPMethod: String {
     case get = "GET"
     case post = "POST"
@@ -41,13 +69,19 @@ public enum HTTPMethod: String {
     case patch = "PATCH"
 }
 
-/// Events received during streaming
+/// Events received during streaming responses.
+///
+/// Used for Server-Sent Events (SSE) streaming:
+/// - `.data`: Contains a chunk of data from the stream
+/// - `.done`: Signals the end of the stream
 public enum StreamEvent: Sendable {
     case data(Data)
     case done
 }
 
-/// Simple network error wrapper
+/// Simple network error wrapper for internal use.
+///
+/// Provides a localized error description for network-related failures.
 struct NetworkError: LocalizedError {
     let message: String
     
@@ -56,7 +90,14 @@ struct NetworkError: LocalizedError {
     }
 }
 
-/// Factory function to create platform-appropriate HTTP client
+/// Factory function to create platform-appropriate HTTP client.
+///
+/// Returns the optimal HTTP client implementation based on the current platform:
+/// - Apple platforms: Uses URLSession for native networking
+/// - Linux: Uses CURL for cross-platform compatibility
+///
+/// - Parameter configuration: The xAI client configuration
+/// - Returns: An HTTP client conforming to ``HTTPClientProtocol``
 public func createHTTPClient(configuration: xAIConfiguration) -> HTTPClientProtocol {
     #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     return URLSessionHTTPClient(configuration: configuration)
@@ -65,7 +106,16 @@ public func createHTTPClient(configuration: xAIConfiguration) -> HTTPClientProto
     #endif
 }
 
-/// URLSession-based HTTP client for Apple platforms
+/// URLSession-based HTTP client for Apple platforms.
+///
+/// Leverages URLSession for efficient, native networking on iOS, macOS, watchOS,
+/// tvOS, and visionOS. Supports both standard requests and streaming responses.
+///
+/// ## Features
+/// - Native URLSession integration
+/// - Automatic retry on transient failures
+/// - Streaming support via URLSession data tasks
+/// - Full async/await support
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
 public final class URLSessionHTTPClient: HTTPClientProtocol, @unchecked Sendable {
     private let configuration: xAIConfiguration
