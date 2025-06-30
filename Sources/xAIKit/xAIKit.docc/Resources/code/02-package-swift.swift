@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v13)
     ],
     dependencies: [
-        .package(url: "https://github.com/yourusername/xAIKit", from: "1.0.0")
+        .package(url: "https://github.com/marcusziade/xAIKit", from: "1.0.0")
     ],
     targets: [
         .executableTarget(

@@ -10,7 +10,7 @@ Add xAIKit to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/xAIKit", from: "1.0.0")
+    .package(url: "https://github.com/marcusziade/xAIKit", from: "1.0.0")
 ],
 targets: [
     .target(
@@ -22,7 +22,7 @@ targets: [
 
 Or add it through Xcode:
 1. File → Add Package Dependencies
-2. Enter the repository URL: `https://github.com/yourusername/xAIKit`
+2. Enter the repository URL: `https://github.com/marcusziade/xAIKit`
 3. Select your desired version rule
 4. Click "Add Package"
 

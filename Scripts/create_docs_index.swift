@@ -356,7 +356,7 @@ let html = """
     <footer>
         <div class="container">
             <div style="margin-top: 20px;">
-                <a href="https://github.com/yourusername/xAIKit">GitHub</a>
+                <a href="https://github.com/marcusziade/xAIKit">GitHub</a>
                 <a href="documentation/xaikit/">Documentation</a>
                 <a href="tutorials/xaikit-tutorials">Tutorials</a>
             </div>
