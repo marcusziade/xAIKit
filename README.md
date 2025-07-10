@@ -44,6 +44,7 @@ print(response.choices.first?.message.content ?? "")
 
 - [🚀 Tutorials](https://marcusziade.github.io/xAIKit/tutorials/xaikit-tutorials) - Step-by-step guides
 - [📖 API Reference](https://marcusziade.github.io/xAIKit/documentation/xaikit) - Complete API documentation
+- [📋 CLI Manual](docs/manual.md) - Comprehensive CLI command reference with examples
 
 ## CLI Tool
 
