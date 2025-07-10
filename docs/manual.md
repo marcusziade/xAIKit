@@ -1,283 +1,48 @@
 # xAIKit CLI Manual
 
-This manual provides comprehensive examples of all xAIKit CLI commands with their outputs.
+This manual provides comprehensive examples of all xAIKit CLI commands with real outputs.
 
 ## Table of Contents
 
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [Command Reference](#command-reference)
-  - [Main Help](#main-help)
-  - [Chat Commands](#chat-commands)
-  - [Messages API](#messages-api)
-  - [Image Generation](#image-generation)
-  - [Model Information](#model-information)
-  - [Tokenization](#tokenization)
-  - [API Key Information](#api-key-information)
-  - [Legacy Completion](#legacy-completion)
-  - [Structured Output Testing](#structured-output-testing)
+- [Setup](#setup)
+- [Basic Commands](#basic-commands)
+- [Chat Completions](#chat-completions)
+- [Messages API](#messages-api)
+- [Image Generation](#image-generation)
+- [Model Information](#model-information)
+- [Tokenization](#tokenization)
+- [API Key Information](#api-key-information)
+- [Structured Output](#structured-output)
 
-## Installation
+## Setup
 
-```bash
-# Build from source
-swift build
-
-# The CLI will be available at:
-.build/debug/xai-cli
-```
-
-## Basic Usage
-
-All commands require an API key, which can be provided via:
-- `--api-key` flag
-- `XAI_API_KEY` environment variable
+First, set your API key as an environment variable:
 
 ```bash
 export XAI_API_KEY="your-api-key-here"
 ```
 
-## Command Reference
-
-### Main Help
-
-<details>
-<summary>View command: <code>xai-cli -h</code></summary>
-
-```
-OVERVIEW: A command-line interface for testing the xAI API
-
-USAGE: xai-cli <subcommand>
-
-OPTIONS:
-  --version               Show the version.
-  -h, --help              Show help information.
-
-SUBCOMMANDS:
-  chat                    Chat completion commands
-  messages                Messages API commands (Anthropic compatible)
-  images                  Image generation commands
-  models                  Model information commands
-  tokenize                Tokenize text
-  api-key                 Get API key information
-  complete                Legacy completion commands
-  test-structured-output  Test structured output functionality (json_object for
-                          xAI, json_schema for OpenAI)
-
-  See 'xai-cli help <subcommand>' for detailed help.
-```
-
-</details>
-
-### Chat Commands
-
-<details>
-<summary>View command: <code>xai-cli chat -h</code></summary>
-
-```
-OVERVIEW: Chat completion commands
-
-USAGE: xai-cli chat [--api-key <api-key>] [--api-url <api-url>] <subcommand>
-
-OPTIONS:
-  --api-key <api-key>     API key (defaults to XAI_API_KEY environment variable)
-  --api-url <api-url>     API base URL
-  --version               Show the version.
-  -h, --help              Show help information.
-
-SUBCOMMANDS:
-  complete                Create a chat completion
-  stream                  Create a streaming chat completion
-
-  See 'xai-cli help chat <subcommand>' for detailed help.
-```
-
-</details>
-
-#### Chat Complete
-
-<details>
-<summary>View command: <code>xai-cli chat complete -h</code></summary>
-
-```
-OVERVIEW: Create a chat completion
-
-USAGE: xai-cli chat complete [--api-key <api-key>] [--api-url <api-url>] <message> [--model <model>] [--system <system>] [--max-tokens <max-tokens>] [--temperature <temperature>] [--json]
-
-ARGUMENTS:
-  <message>               The message to send
-
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --model <model>         The model to use (default: grok-3-mini-fast-latest)
-  --system <system>       System prompt
-  --max-tokens <max-tokens>
-                          Maximum tokens to generate
-  --temperature <temperature>
-                          Temperature (0-2)
-  --json                  Output raw JSON response
-  --version               Show the version.
-  -h, --help              Show help information.
-```
-
-</details>
-
-<details>
-<summary>Example: Simple chat completion with Grok-4</summary>
+Build the CLI tool:
 
 ```bash
-$ xai-cli chat complete "Hello, what is 2+2?" --model grok-4-0709
+swift build
 ```
 
-Output:
-```
-Hello! 2 + 2 equals 4. 😊 If that's not what you meant or if you have a trickier question, feel free to elaborate!
+The CLI will be available at `.build/debug/xai-cli`
 
----
-Model: grok-4-0709
-Tokens: 16 prompt + 33 completion = 209 total
-```
+## Basic Commands
 
-</details>
-
-#### Chat Stream
+### List Available Models
 
 <details>
-<summary>Example: Streaming chat completion</summary>
+<summary>View example</summary>
 
+**Command:**
 ```bash
-$ xai-cli chat stream "Tell me a short joke" --model grok-4-0709
+xai-cli models list
 ```
 
-Output:
-```
-Why don't scientists trust atoms?
-
-Because they make up everything!
-
----
-Model: grok-4-0709
-Tokens: 7 prompt + 14 completion = 21 total
-```
-
-</details>
-
-### Messages API
-
-<details>
-<summary>View command: <code>xai-cli messages -h</code></summary>
-
-```
-OVERVIEW: Messages API commands (Anthropic compatible)
-
-USAGE: xai-cli messages [--api-key <api-key>] [--api-url <api-url>] <subcommand>
-
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --version               Show the version.
-  -h, --help              Show help information.
-
-SUBCOMMANDS:
-  create                  Create a message
-  stream                  Create a streaming message
-
-  See 'xai-cli help messages <subcommand>' for detailed help.
-```
-
-</details>
-
-<details>
-<summary>View command: <code>xai-cli messages create -h</code></summary>
-
-```
-OVERVIEW: Create a message
-
-USAGE: xai-cli messages create [--api-key <api-key>] [--api-url <api-url>] <message> [--model <model>] [--system <system>] [--max-tokens <max-tokens>] [--temperature <temperature>] [--json]
-
-ARGUMENTS:
-  <message>               The message to send
-
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --model <model>         The model to use (default: grok-3-fast-latest)
-  --system <system>       System prompt
-  --max-tokens <max-tokens>
-                          Maximum tokens to generate (default: 1024)
-  --temperature <temperature>
-                          Temperature (0-1)
-  --json                  Output raw JSON response
-  --version               Show the version.
-  -h, --help              Show help information.
-```
-
-</details>
-
-### Image Generation
-
-<details>
-<summary>View command: <code>xai-cli images -h</code></summary>
-
-```
-OVERVIEW: Image generation commands
-
-USAGE: xai-cli images [--api-key <api-key>] [--api-url <api-url>] <subcommand>
-
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --version               Show the version.
-  -h, --help              Show help information.
-
-SUBCOMMANDS:
-  generate                Generate images
-  analyze                 Analyze an image using vision-capable chat models
-
-  See 'xai-cli help images <subcommand>' for detailed help.
-```
-
-</details>
-
-<details>
-<summary>View command: <code>xai-cli images generate -h</code></summary>
-
-```
-OVERVIEW: Generate images
-
-USAGE: xai-cli images generate [--api-key <api-key>] [--api-url <api-url>] <prompt> [--model <model>] [--n <n>] [--size <size>] [--quality <quality>] [--style <style>] [--base64]
-
-ARGUMENTS:
-  <prompt>                The prompt for image generation
-
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --model <model>         The model to use (default: grok-2-image)
-  --n <n>                 Number of images to generate (default: 1)
-  --size <size>           Image size (default: 1024x1024)
-  --quality <quality>     Image quality (standard/hd) - Note: May not be
-                          supported by xAI
-  --style <style>         Image style (vivid/natural) - Note: May not be
-                          supported by xAI
-  --base64                Output base64 instead of URL
-  --version               Show the version.
-  -h, --help              Show help information.
-```
-
-</details>
-
-### Model Information
-
-<details>
-<summary>View command: <code>xai-cli models list</code></summary>
-
-```bash
-$ xai-cli models list
-```
-
-Output:
+**Output:**
 ```
 Available models:
 - grok-2-1212 (owned by: xai)
@@ -292,145 +57,303 @@ Available models:
 
 </details>
 
-### Tokenization
+## Chat Completions
+
+### Simple Chat Completion
 
 <details>
-<summary>View command: <code>xai-cli tokenize -h</code></summary>
+<summary>View example</summary>
 
-```
-OVERVIEW: Tokenize text
-
-USAGE: xai-cli tokenize [--api-key <api-key>] [--api-url <api-url>] <text> [--model <model>] [--details]
-
-ARGUMENTS:
-  <text>                  Text to tokenize
-
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --model <model>         Model to use for tokenization (default:
-                          grok-3-fast-latest)
-  --details               Show token details
-  --version               Show the version.
-  -h, --help              Show help information.
-```
-
-</details>
-
-<details>
-<summary>Example: Tokenize text</summary>
-
+**Command:**
 ```bash
-$ xai-cli tokenize "Hello world" --model grok-4-0709
+xai-cli chat complete "What is the capital of France?" --model grok-4-0709
 ```
 
-Output:
+**Output:**
 ```
-Token count: 2
-Token IDs: [17286, 2314]
+The capital of France is **Paris**. It's not only the political center but also a global hub for art, fashion, and culture. If you have more questions about France or travel tips, feel free to ask! 😊
+
+---
+Model: grok-4-0709
+Tokens: 14 prompt + 45 completion = 160 total
 ```
 
 </details>
 
-### API Key Information
+### Creative Writing
 
 <details>
-<summary>View command: <code>xai-cli api-key -h</code></summary>
+<summary>View example</summary>
 
+**Command:**
+```bash
+xai-cli chat complete "Write a haiku about programming" --model grok-3-fast
 ```
-OVERVIEW: Get API key information
 
-USAGE: xai-cli api-key [--api-key <api-key>] [--api-url <api-url>]
+**Output:**
+```
+Code flows like a stream,
+Lines of logic weave and dream,
+Digital thoughts gleam.
 
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --version               Show the version.
-  -h, --help              Show help information.
+---
+Model: grok-3-fast
+Tokens: 12 prompt + 17 completion = 29 total
 ```
 
 </details>
 
-### Legacy Completion
+### Adjusting Temperature
 
 <details>
-<summary>View command: <code>xai-cli complete -h</code></summary>
+<summary>View example</summary>
 
+**Command:**
+```bash
+xai-cli chat complete "Explain quantum computing in one sentence" --model grok-3-mini-fast --temperature 0.5
 ```
-OVERVIEW: Legacy completion commands
 
-USAGE: xai-cli complete [--api-key <api-key>] [--api-url <api-url>] <subcommand>
+**Output:**
+```
+Quantum computing is an advanced form of computing that harnesses quantum mechanical phenomena, such as superposition and entanglement, to perform complex calculations on qubits that can exist in multiple states simultaneously, enabling it to solve certain problems much faster than classical computers.
 
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API base URL
-  --version               Show the version.
-  -h, --help              Show help information.
-
-SUBCOMMANDS:
-  openai                  Create a completion (OpenAI legacy format)
-  anthropic               Create a completion (Anthropic legacy format)
-
-  See 'xai-cli help complete <subcommand>' for detailed help.
+---
+Model: grok-3-mini-fast
+Tokens: 12 prompt + 47 completion = 331 total
 ```
 
 </details>
 
-### Structured Output Testing
+### Streaming Responses
 
 <details>
-<summary>View command: <code>xai-cli test-structured-output -h</code></summary>
+<summary>View example</summary>
 
+**Command:**
+```bash
+xai-cli chat stream "Tell me a joke" --model grok-3-mini-fast
 ```
-OVERVIEW: Test structured output functionality (json_object for xAI,
-json_schema for OpenAI)
 
-USAGE: xai-cli test-structured-output [--api-key <api-key>] [--api-url <api-url>] [--model <model>] [--test-type <test-type>] [--json] [--no-structured]
+**Output:**
+```
+Why did the computer go to the doctor? Because it had a virus! 😄
 
-OPTIONS:
-  --api-key <api-key>     API key
-  --api-url <api-url>     API URL
-  --model <model>         Model to use (default: grok-3-mini-fast)
-  --test-type <test-type> Test type: simple, complex, json-object, or all
-                          (default: all)
-  --json                  Output raw JSON response
-  --no-structured         Disable structured output format (for APIs that don't
-                          support it)
-  --version               Show the version.
-  -h, --help              Show help information.
+Hope that brought a smile to your face—got any more
+```
+
+*Note: Streaming responses appear character by character in real-time*
+
+</details>
+
+## Messages API
+
+The Messages API provides Anthropic-compatible message formatting:
+
+<details>
+<summary>View example</summary>
+
+**Command:**
+```bash
+xai-cli messages create "What's the weather like today?" --model grok-3-fast
+```
+
+**Output:**
+```
+I'm sorry, but I don't have access to real-time data like current weather information since my knowledge is up to date only until October 2023. However, I can help you find out the weather by suggesting ways to check it!
+
+- **Use a weather app**: Apps like Weather Underground, AccuWeather, or the default weather app on your phone can give you up-to-date information based on your location.
+- **Check online**: Websites like weather.com or bbc.com/weather allow you to search for your city or zip code.
+- **Ask a virtual assistant**: If you're using a device with a virtual assistant like Siri, Google Assistant, or Alexa, you can ask them directly for the current weather.
+- **Local news**: Tuning into a local news channel or radio station often provides weather updates.
+
+If you tell me your location, I can guide you to a specific resource or let you know about typical weather patterns for that area based on historical data. Where are you located?
+
+---
+Model: grok-3-fast
+Stop reason: end_turn
+Tokens: 12 input + 201 output
 ```
 
 </details>
 
-## Environment Variables
+## Image Generation
 
-- `XAI_API_KEY`: Your xAI API key
-- `XAI_API_URL`: Override the default API base URL
+### Generate an Image
+
+<details>
+<summary>View example</summary>
+
+**Command:**
+```bash
+xai-cli images generate "A serene mountain landscape at sunset with a lake" --model grok-2-image-1212
+```
+
+**Output:**
+```
+Generated 1 image(s):
+
+Image 1:
+URL: https://imgen.x.ai/xai-imgen/xai-tmp-imgen-d8d46bf7-8544-4ff9-a33f-44c9d066b599.jpeg
+
+Revised prompt: A high-resolution photograph of a serene mountain landscape at sunset, featuring a calm lake that reflects the vibrant colors of the sky. The mountains are silhouetted against a backdrop of deep oranges and purples, with a few clouds enhancing the sunset's beauty. The lake is surrounded by trees that line its edges, adding depth to the scene without distracting from the main focus. The overall composition emphasizes tranquility and natural beauty, with no additional foreground elements to maintain the focus on the sunset and the lake. The scene is devoid of any human presence or modern elements, preserving the untouched nature of the setting.
+```
+
+</details>
+
+## Model Information
+
+### Get Specific Model Details
+
+<details>
+<summary>View example</summary>
+
+**Command:**
+```bash
+xai-cli models get grok-4-0709
+```
+
+**Output:**
+```
+Model: grok-4-0709
+Created: 2025-07-09 00:00:00 +0000
+Owned by: xai
+```
+
+</details>
+
+## Tokenization
+
+### Basic Tokenization
+
+<details>
+<summary>View example</summary>
+
+**Command:**
+```bash
+xai-cli tokenize "Hello, world!" --model grok-4-0709
+```
+
+**Output:**
+```
+Token count: 4
+Token IDs: [17286, 172, 2314, 161]
+```
+
+</details>
+
+### Detailed Tokenization
+
+<details>
+<summary>View example</summary>
+
+**Command:**
+```bash
+xai-cli tokenize "Hello, world!" --model grok-4-0709 --details
+```
+
+**Output:**
+```
+Token count: 4
+
+Tokens:
+  ID: 17286, String: 'Hello'
+  ID: 172, String: ','
+  ID: 2314, String: ' world'
+  ID: 161, String: '!'
+```
+
+</details>
+
+## API Key Information
+
+<details>
+<summary>View example</summary>
+
+**Command:**
+```bash
+xai-cli api-key
+```
+
+**Output:**
+```
+API Key Information:
+  Key: xai-...rKpr
+  Name: ultima-cli-linux
+  User ID: 2cf429b4-a08e-4ebd-bd9f-f3c7ec1c772d
+  Team ID: 575e0d53-b356-407c-a345-d142489020cd
+  Created: 
+  Modified: 
+  Status:
+    Disabled: No
+    Blocked: No
+    Team blocked: No
+  Permissions: api-key:endpoint:*, api-key:model:*
+```
+
+</details>
+
+## Structured Output
+
+### JSON Object Format (xAI Compatible)
+
+<details>
+<summary>View example</summary>
+
+**Command:**
+```bash
+xai-cli test-structured-output --model grok-3-mini-fast --test-type json-object
+```
+
+**Output:**
+```
+Testing JSON Object Response Format (xAI Compatible)
+===================================================
+
+Request Details:
+- Model: grok-3-mini-fast
+- Response Format Type: json_object
+
+Sending request...
+
+Response:
+Content: {"name":"John Doe","age":30,"email":"john.doe@example.com"}
+
+Parsed JSON:
+- age: 30
+- name: John Doe
+- email: john.doe@example.com
+```
+
+</details>
 
 ## Tips and Best Practices
 
-1. **Model Selection**: Use appropriate models for your use case:
-   - `grok-4-0709`: Most capable model for complex tasks
-   - `grok-3-fast`: Good balance of speed and capability
-   - `grok-3-mini-fast`: Fastest model for simple tasks
-   - `grok-2-image-1212`: For image generation
-   - `grok-2-vision-1212`: For image analysis
+### Model Selection Guide
 
-2. **Streaming**: Use streaming for better user experience with long outputs
-3. **Temperature**: Adjust temperature (0-2) for creativity vs consistency
-4. **JSON Output**: Use `--json` flag to get raw API responses for debugging
+- **grok-4-0709**: Most capable model for complex reasoning and analysis
+- **grok-3-fast**: Balanced performance and speed for general tasks
+- **grok-3-mini-fast**: Fastest responses for simple queries
+- **grok-2-image-1212**: Image generation capabilities
+- **grok-2-vision-1212**: Image analysis and understanding
 
-## Error Handling
+### Performance Optimization
 
-Common errors and solutions:
+1. Use streaming for long responses to improve perceived latency
+2. Choose appropriate models based on task complexity
+3. Adjust temperature (0-2) for consistency vs creativity:
+   - Lower values (0-0.5): More focused and deterministic
+   - Higher values (1.5-2): More creative and varied
 
-1. **Missing API Key**: Set `XAI_API_KEY` environment variable or use `--api-key` flag
-2. **Invalid Model**: Check available models with `xai-cli models list`
-3. **Rate Limits**: Implement appropriate delays between requests
-4. **Network Issues**: Check your internet connection and API URL
+### Error Handling
+
+Common issues and solutions:
+
+- **Rate Limits**: Implement delays between requests
+- **Timeouts**: Use streaming for long-running requests
+- **Invalid Models**: Check available models with `xai-cli models list`
 
 ## Additional Resources
 
 - [xAIKit GitHub Repository](https://github.com/marcusziade/xAIKit)
 - [xAI API Documentation](https://docs.x.ai/)
-- [Swift Package Documentation](https://swiftpackageindex.com/marcusziade/xAIKit)
+- [Swift Package Documentation](https://marcusziade.github.io/xAIKit/)
