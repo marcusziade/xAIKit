@@ -3,8 +3,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux-blue.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![CI](https://github.com/marcusziade/xAIKit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcusziade/xAIKit/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/Documentation-DocC-blue.svg)](https://marcusziade.github.io/xAIKit/)
+[![CI](https://github.com/guitaripod/xAIKit/actions/workflows/ci.yml/badge.svg)](https://github.com/guitaripod/xAIKit/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/Documentation-DocC-blue.svg)](https://guitaripod.github.io/xAIKit/)
 
 Swift SDK for xAI's API with support for Grok models, image generation, and vision capabilities.
 
@@ -22,7 +22,7 @@ Swift SDK for xAI's API with support for Grok models, image generation, and visi
 Add xAIKit to your Swift package dependencies:
 
 ```swift
-.package(url: "https://github.com/marcusziade/xAIKit.git", from: "1.0.0")
+.package(url: "https://github.com/guitaripod/xAIKit.git", from: "1.0.0")
 ```
 
 ## Quick Start
@@ -42,8 +42,8 @@ print(response.choices.first?.message.content ?? "")
 
 ## Documentation
 
-- [🚀 Tutorials](https://marcusziade.github.io/xAIKit/tutorials/xaikit-tutorials) - Step-by-step guides
-- [📖 API Reference](https://marcusziade.github.io/xAIKit/documentation/xaikit) - Complete API documentation
+- [🚀 Tutorials](https://guitaripod.github.io/xAIKit/tutorials/xaikit-tutorials) - Step-by-step guides
+- [📖 API Reference](https://guitaripod.github.io/xAIKit/documentation/xaikit) - Complete API documentation
 - [📋 CLI Manual](docs/manual.md) - Comprehensive CLI command reference with examples
 
 ## CLI Tool

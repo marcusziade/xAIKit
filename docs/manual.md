@@ -354,6 +354,6 @@ Common issues and solutions:
 
 ## Additional Resources
 
-- [xAIKit GitHub Repository](https://github.com/marcusziade/xAIKit)
+- [xAIKit GitHub Repository](https://github.com/guitaripod/xAIKit)
 - [xAI API Documentation](https://docs.x.ai/)
-- [Swift Package Documentation](https://marcusziade.github.io/xAIKit/)
+- [Swift Package Documentation](https://guitaripod.github.io/xAIKit/)
